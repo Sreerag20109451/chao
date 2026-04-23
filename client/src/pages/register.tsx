@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { UtensilsCrossed, Eye, EyeOff, UserPlus, Lock, Mail, User } from "lucide-react";
+import { auth } from "@/lib/firebase";
+import { validateEmail, validatePassword } from "@/lib/validators";
+import { toast } from "sonner";
+import { registerClient, signInWithGoogle } from "@/lib/firebase/auth/service";
+import { useSelector } from "react-redux";
+import { RootState } from "@/lib/store";
 
 interface ScrollRevealProps {
   children: React.ReactNode;
@@ -45,6 +52,8 @@ function ScrollReveal({ children, className = "", animation = "fade-up", style =
 }
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -52,11 +61,49 @@ export default function RegisterPage() {
     password: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/");
+    }
+  }, [isAuthenticated, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    
+    // Validation
+    if (!validateEmail(formData.email)) {
+      setErrors(prev => ({ ...prev, email: "Invalid email address" }));
+      return;
+    }
+    const pwError = validatePassword(formData.password);
+    if (pwError) {
+      setErrors(prev => ({ ...prev, password: pwError }));
+      return;
+    }
+
     setIsSubmitting(true);
-    setTimeout(() => setIsSubmitting(false), 1500);
+    try {
+      await registerClient(formData.name, formData.email, formData.password);
+      router.push("/");
+    } catch (error: any) {
+      const message = error?.message || "Registration failed. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      await signInWithGoogle();
+      router.push("/");
+    } catch (error) {
+      console.error("Google Sign-In error:", error);
+      toast.error("Google Sign-In failed.");
+    }
   };
 
   return (
@@ -103,9 +150,10 @@ export default function RegisterPage() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="name@example.com"
-                    className="w-full bg-white border border-brand-lavender-mid rounded-xl py-3.5 pl-12 pr-4 font-body text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-violet/20 focus:border-brand-violet transition-all shadow-sm"
+                    className={`w-full bg-white border ${errors.email ? 'border-red-500' : 'border-brand-lavender-mid'} rounded-xl py-3.5 pl-12 pr-4 font-body text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-violet/20 focus:border-brand-violet transition-all shadow-sm`}
                   />
                 </div>
+                {errors.email && <p className="text-xs text-red-500 mt-1 ml-2 font-body">{errors.email}</p>}
               </div>
 
               <div>
@@ -118,7 +166,7 @@ export default function RegisterPage() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="••••••••"
-                    className="w-full bg-white border border-brand-lavender-mid rounded-xl py-3.5 pl-12 pr-12 font-body text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-violet/20 focus:border-brand-violet transition-all shadow-sm"
+                    className={`w-full bg-white border ${errors.password ? 'border-red-500' : 'border-brand-lavender-mid'} rounded-xl py-3.5 pl-12 pr-12 font-body text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-violet/20 focus:border-brand-violet transition-all shadow-sm`}
                   />
                   <button
                     type="button"
@@ -128,6 +176,7 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {errors.password && <p className="text-xs text-red-500 mt-1 ml-2 font-body leading-tight">{errors.password}</p>}
               </div>
 
               <button
@@ -156,6 +205,7 @@ export default function RegisterPage() {
             </div>
 
             <button
+              onClick={handleGoogleSignUp}
               className="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-50 text-brand-text font-display font-semibold py-4 rounded-2xl border border-zinc-200 transition-all duration-200 shadow-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

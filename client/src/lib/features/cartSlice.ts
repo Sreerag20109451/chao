@@ -36,7 +36,11 @@ const cartSlice = createSlice({
         existingItem.quantity += 1;
       } else {
         const cartId = `${id}-${selectedProtein || "none"}-${selectedSide || "none"}`;
-        state.items.push({ ...action.payload, cartId, quantity: 1 });
+        const newItem = { ...action.payload, cartId, quantity: 1 };
+        // Strip non-serializable Firestore Timestamps
+        delete (newItem as any).createdAt;
+        delete (newItem as any).updatedAt;
+        state.items.push(newItem);
       }
     },
     removeFromCart: (state, action: PayloadAction<string>) => {

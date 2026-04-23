@@ -11,6 +11,11 @@ import { useDispatch } from "react-redux";
 import { addToCart } from "@/lib/features/cartSlice";
 import { MenuItem } from "@/lib/menuData";
 import { Check, ShoppingCart } from "lucide-react";
+import { useStoreStatus } from "@/hooks/useStoreStatus";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import { RootState } from "@/lib/store";
+import { useRouter } from "next/router";
 
 interface CustomizeModalProps {
   item: MenuItem;
@@ -19,16 +24,37 @@ interface CustomizeModalProps {
 
 export default function CustomizeModal({ item, children }: CustomizeModalProps) {
   const dispatch = useDispatch();
-  const [selectedProtein, setSelectedProtein] = useState(item.proteinOptions?.[0] || "");
-  const [selectedSide, setSelectedSide] = useState(item.sideOptions?.[0] || "");
+  const router = useRouter();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isOpen: isStoreOpen } = useStoreStatus();
+  const [selectedProtein, setSelectedProtein] = useState(item.availableMeats?.[0] || "");
+  const [selectedSide, setSelectedSide] = useState(item.availableSides?.[0] || "");
   const [isOpen, setIsOpen] = useState(false);
 
+  const getMeatIncrement = (meat: string) => {
+    if (meat === 'Lamb') return 1;
+    if (meat === 'Prawn' || meat === 'Beef') return 2;
+    return 0;
+  };
+
+  const finalPrice = (item.basePrice || 0) + (item.availableMeats?.length ? getMeatIncrement(selectedProtein) : 0);
+
   const handleAddToCart = () => {
+    if (!isStoreOpen) {
+      toast.error("Sorry, the store is currently closed for orders.");
+      return;
+    }
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
     dispatch(addToCart({
       ...item,
-      selectedProtein: item.proteinOptions ? selectedProtein : undefined,
-      selectedSide: item.sideOptions ? selectedSide : undefined,
+      basePrice: finalPrice,
+      selectedProtein: item.availableMeats?.length ? selectedProtein : undefined,
+      selectedSide: item.availableSides?.length ? selectedSide : undefined,
     }));
+    toast.success(`Added ${item.name} to cart`);
     setIsOpen(false);
   };
 
@@ -49,14 +75,14 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
         </DialogHeader>
 
         <div className="space-y-8 py-6">
-          {item.proteinOptions && (
+          {item.availableMeats && item.availableMeats.length > 0 && (
             <div className="space-y-4">
               <label className="text-xs font-display font-bold text-brand-text uppercase tracking-widest flex items-center justify-between">
-                Choose Protein
+                Choose Meat
                 <span className="text-[10px] text-brand-violet bg-brand-violet/5 px-2 py-0.5 rounded-full">Required</span>
               </label>
               <div className="grid grid-cols-2 gap-3">
-                {item.proteinOptions.map((protein) => (
+                {item.availableMeats.map((protein) => (
                   <button
                     key={protein}
                     onClick={() => setSelectedProtein(protein)}
@@ -66,7 +92,10 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
                         : "bg-brand-lavender/30 border-brand-lavender-mid text-brand-text hover:border-brand-violet/40"
                     }`}
                   >
-                    {protein}
+                    <span>
+                      {protein}
+                      {getMeatIncrement(protein) > 0 && <span className="opacity-70 text-[10px] ml-1">(+£{getMeatIncrement(protein)})</span>}
+                    </span>
                     {selectedProtein === protein && <Check className="w-4 h-4" />}
                   </button>
                 ))}
@@ -74,14 +103,14 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
             </div>
           )}
 
-          {item.sideOptions && (
+          {item.availableSides && item.availableSides.length > 0 && (
             <div className="space-y-4">
               <label className="text-xs font-display font-bold text-brand-text uppercase tracking-widest flex items-center justify-between">
                 Choose Side
                 <span className="text-[10px] text-brand-violet bg-brand-violet/5 px-2 py-0.5 rounded-full">Required</span>
               </label>
               <div className="grid grid-cols-2 gap-3">
-                {item.sideOptions.map((side) => (
+                {item.availableSides.map((side) => (
                   <button
                     key={side}
                     onClick={() => setSelectedSide(side)}
@@ -106,7 +135,7 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
             className="w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-2xl py-4 shadow-violet-glow transition-all flex items-center justify-center gap-2 group active:scale-95"
           >
             <ShoppingCart className="w-5 h-5 transition-transform group-hover:-translate-y-0.5" />
-            Add to Basket — £{item.price.toFixed(2)}
+            Add to Basket — £{finalPrice.toFixed(2)}
           </button>
         </DialogFooter>
       </DialogContent>

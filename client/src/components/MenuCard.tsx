@@ -1,63 +1,109 @@
 import { Badge } from "@/components/ui/badge";
-import type { MenuItem, MenuTag } from "@/lib/menuData";
-import { Flame, Leaf, ChefHat, WheatOff, Plus } from "lucide-react";
+import type { MenuItem, Allergen, Deal } from "@/lib/menuData";
+import { Flame, Leaf, ChefHat, WheatOff, Plus, AlertTriangle, Check, Tag } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
 import { useRouter } from "next/router";
 import { addToCart } from "@/lib/features/cartSlice";
 import CustomizeModal from "./CustomizeModal";
+import { useStoreStatus } from "@/hooks/useStoreStatus";
+import { toast } from "sonner";
 
-/* ---- Tag display config ---- */
-const tagConfig: Record<
-  MenuTag,
+/* ---- Allergen display config ---- */
+const allergenConfig: Record<
+  Allergen,
   { label: string; icon: React.ReactNode; className: string }
 > = {
-  spicy: {
-    label: "Spicy",
-    icon: <Flame className="w-3 h-3" />,
-    /* Red badge for heat indicators */
-    className:
-      "bg-red-50 text-red-600 border-red-200 hover:bg-red-50",
+  "Dairy/Milk": {
+    label: "Dairy",
+    icon: <AlertTriangle className="w-3 h-3" />,
+    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
   },
-  vegan: {
-    label: "Vegan",
-    icon: <Leaf className="w-3 h-3" />,
-    /* Green for plant-based */
-    className:
-      "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50",
+  "Eggs": {
+    label: "Eggs",
+    icon: <AlertTriangle className="w-3 h-3" />,
+    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
   },
-  "chef-pick": {
-    label: "Chef's Pick",
-    icon: <ChefHat className="w-3 h-3" />,
-    /* Violet to match brand primary */
-    className:
-      "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-50",
+  "Nuts": {
+    label: "Nuts",
+    icon: <AlertTriangle className="w-3 h-3" />,
+    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
   },
-  "gluten-free": {
+  "Crustaceans": {
+    label: "Crustaceans",
+    icon: <AlertTriangle className="w-3 h-3" />,
+    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
+  },
+  "Soy": {
+    label: "Soy",
+    icon: <AlertTriangle className="w-3 h-3" />,
+    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
+  },
+  "Gluten": {
     label: "GF",
-    icon: <WheatOff className="w-3 h-3" />,
-    className:
-      "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
+    icon: <Check className="w-3 h-3" />,
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50",
   },
 };
 
 interface MenuCardProps {
   item: MenuItem;
+  deals?: Deal[];
 }
-export default function MenuCard({ item }: MenuCardProps) {
+export default function MenuCard({ item, deals }: MenuCardProps) {
   const router = useRouter();
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isOpen } = useStoreStatus();
 
-  const hasOptions = !!(item.proteinOptions?.length || item.sideOptions?.length);
+  const hasOptions = !!(item.availableMeats?.length || item.availableSides?.length);
+
+  const getEffectivePrice = () => {
+    if (!deals || deals.length === 0) return item.basePrice || 0;
+    
+    const now = new Date();
+    const applicableDeals = deals.filter(deal => {
+      const start = new Date(deal.startDate);
+      const end = new Date(deal.endDate);
+      end.setHours(23, 59, 59, 999);
+      if (now < start || now > end) return false;
+      if (deal.applicableCategories && deal.applicableCategories.includes(item.category)) return true;
+      if (deal.applicableItems && deal.applicableItems.includes(item.id)) return true;
+      return false;
+    });
+
+    if (applicableDeals.length === 0) return item.basePrice || 0;
+
+    let lowestPrice = item.basePrice || 0;
+    applicableDeals.forEach(deal => {
+      let dealPrice = item.basePrice || 0;
+      if (deal.type === 'fixed_price') {
+        dealPrice = deal.value;
+      } else if (deal.type === 'discount') {
+        dealPrice = (item.basePrice || 0) * (1 - deal.value / 100);
+      }
+      if (dealPrice < lowestPrice) lowestPrice = dealPrice;
+    });
+
+    return lowestPrice;
+  };
+
+  const effectivePrice = getEffectivePrice();
+  const hasActiveDeal = effectivePrice < (item.basePrice || 0);
 
   const handleAddToCart = () => {
+    if (!isOpen) {
+      toast.error("Sorry, the store is currently closed for orders.");
+      return;
+    }
     if (!isAuthenticated) {
       router.push("/login");
       return;
     }
     if (!hasOptions) {
-      dispatch(addToCart(item));
+      // Overwrite basePrice with effectivePrice so the cart knows the discounted price
+      dispatch(addToCart({ ...item, basePrice: effectivePrice }));
+      toast.success(`Added ${item.name} to cart`);
     }
   };
 
@@ -74,21 +120,14 @@ export default function MenuCard({ item }: MenuCardProps) {
       <div className="flex flex-col flex-1 p-5 gap-3">
 
         {/* Badges row */}
-        {item.tags.length > 0 && (
+        {item.allergens && item.allergens.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {item.tags.map((tag) => {
-              const cfg = tagConfig[tag];
-              return (
-                <Badge
-                  key={tag}
-                  variant="outline"
-                  className={`text-xs font-display font-medium flex items-center gap-1 ${cfg.className}`}
-                >
-                  {cfg.icon}
-                  {cfg.label}
-                </Badge>
-              );
-            })}
+            {item.allergens.map((allergen) => (
+              <span key={allergen} className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
+                {allergen === 'Gluten' || allergen === 'Vegan' || allergen === 'Vegetarian' ? <AlertTriangle className="w-2.5 h-2.5" /> : <AlertTriangle className="w-2.5 h-2.5" />}
+                {allergen}
+              </span>
+            ))}
           </div>
         )}
 
@@ -104,12 +143,20 @@ export default function MenuCard({ item }: MenuCardProps) {
 
         {/* Price & Add to Cart — Bai Jamjuree Bold, amber accent */}
         <div className="pt-3 mt-1 border-t border-brand-lavender-mid flex items-center justify-between">
-          <span className="font-display font-bold text-amber-accent text-lg">
-            £{item.price.toFixed(2)}
-          </span>
+          <div className="flex flex-col">
+            {hasActiveDeal && (
+              <span className="text-[10px] text-brand-muted line-through font-bold">
+                £{item.basePrice?.toFixed(2)}
+              </span>
+            )}
+            <span className="font-display font-bold text-amber-accent text-lg flex items-center gap-1">
+              {hasActiveDeal && <Tag className="w-3.5 h-3.5 text-brand-violet" />}
+              £{effectivePrice.toFixed(2)}
+            </span>
+          </div>
           
           {hasOptions ? (
-            <CustomizeModal item={item}>
+            <CustomizeModal item={{...item, basePrice: effectivePrice}}>
               <button
                 className="flex items-center justify-center bg-brand-violet hover:bg-brand-violet-dark text-white p-2 rounded-full shadow-sm transition-all duration-200 hover:scale-110 active:scale-95"
                 aria-label={`Customize ${item.name}`}

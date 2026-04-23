@@ -1,78 +1,160 @@
 "use client";
 
-import React, { useState } from "react";
-import { initialMenuItems, MenuItem } from "@/lib/menuData";
-import { Search, Plus, Minus, Trash2, MapPin, Truck, Receipt, X, ChevronRight, Check, ShoppingBag, Bike } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { MenuItem, Category, Deal } from "@/lib/menuData";
+import { Search, Plus, Minus, Trash2, MapPin, Truck, Receipt, X, ChevronRight, Check, ShoppingBag, Bike, Loader2, Tag } from "lucide-react";
 import { toast } from "sonner";
 import Invoice, { InvoiceData } from "../Invoice";
+import { getMenuItems, listenToMenu } from "@/lib/firebase/menu/service";
+import { listenToDealsAdmin } from "@/lib/firebase/deals/service";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 
 interface OrderItem extends MenuItem {
   quantity: number;
-  selectedProtein?: string;
+  selectedMeat?: string;
   selectedSide?: string;
+  isDealActive?: boolean;
 }
 
-const CUSTOMISABLE_CATEGORIES = ["mains", "curries", "noodles"];
+const CUSTOMISABLE_CATEGORIES: Category[] = ["Main Course", "Curry"];
 
 export default function Billing() {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [activeDeals, setActiveDeals] = useState<Deal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [orderType, setOrderType] = useState<"collection" | "delivery">("collection");
   const [address, setAddress] = useState("");
+  const [deliveryPhone, setDeliveryPhone] = useState("");
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [showInvoice, setShowInvoice] = useState(false);
   
   const [customizingItem, setCustomizingItem] = useState<MenuItem | null>(null);
-  const [tempProtein, setTempProtein] = useState<string>("");
+  const [tempMeat, setTempMeat] = useState<string>("");
   const [tempSide, setTempSide] = useState<string>("");
 
-  const filteredItems = initialMenuItems.filter(item =>
+  useEffect(() => {
+    const now = new Date();
+
+    const unsubMenu = listenToMenu((data) => {
+      setMenuItems(data);
+      setIsLoading(false);
+    });
+
+    const unsubDeals = listenToDealsAdmin((dealsData) => {
+      const active = dealsData.filter(d =>
+        d.isActive &&
+        new Date(d.startDate) <= now &&
+        new Date(d.endDate) >= now
+      );
+      setActiveDeals(active);
+    });
+
+    return () => {
+      unsubMenu();
+      unsubDeals();
+    };
+  }, []);
+
+  // Helper to get active deal for an item
+  const getItemDeal = (itemId: string) => {
+    return activeDeals.find(d => d.items.includes(itemId));
+  };
+
+  const getEffectivePrice = (item: MenuItem) => {
+    const deal = getItemDeal(item.id);
+    if (deal && deal.dealPrice !== undefined && deal.dealPrice !== null && !isNaN(Number(deal.dealPrice))) {
+      return Number(deal.dealPrice);
+    }
+    return Number(item.basePrice) || 0;
+  };
+
+  const filteredItems = menuItems.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleItemClick = (item: MenuItem) => {
-    if (CUSTOMISABLE_CATEGORIES.includes(item.category) || (item.proteinOptions && item.proteinOptions.length > 0)) {
-      setCustomizingItem(item);
-      setTempProtein(item.proteinOptions?.[0] || "");
-      setTempSide(item.sideOptions?.[0] || "");
-    } else {
-      addToOrder(item);
+    try {
+      const hasMeats = item.availableMeats?.length > 0;
+      const hasSides = item.availableSides?.length > 0;
+      const isCustomizable = item.category && CUSTOMISABLE_CATEGORIES.includes(item.category);
+
+      if (isCustomizable && (hasMeats || hasSides)) {
+        setCustomizingItem(item);
+        setTempMeat(hasMeats ? item.availableMeats[0] : "");
+        setTempSide(hasSides ? item.availableSides[0] : "");
+      } else {
+        addToOrder(item);
+      }
+    } catch (e: any) {
+      console.error("handleItemClick error:", e);
+      toast.error(`Error selecting item: ${e.message}`);
     }
   };
 
   const confirmCustomization = () => {
-    if (customizingItem) {
-      addToOrder(customizingItem, tempProtein, tempSide);
-      setCustomizingItem(null);
-      setTempProtein("");
-      setTempSide("");
+    try {
+      if (customizingItem) {
+        addToOrder(customizingItem, tempMeat, tempSide);
+        setCustomizingItem(null);
+        setTempMeat("");
+        setTempSide("");
+      }
+    } catch (e: any) {
+      console.error("confirmCustomization error:", e);
+      toast.error(`Error confirming customization: ${e.message}`);
     }
   };
 
-  const addToOrder = (item: MenuItem, protein?: string, side?: string) => {
-    setOrderItems(prev => {
-      const isCustom = CUSTOMISABLE_CATEGORIES.includes(item.category) || (item.proteinOptions && item.proteinOptions.length > 0);
-      const existing = prev.find(i => 
-        i.id === item.id && 
-        (!isCustom || (i.selectedProtein === protein && i.selectedSide === side))
-      );
+  const getMeatIncrement = (meat?: string) => {
+    if (meat === 'Lamb') return 1;
+    if (meat === 'Prawn' || meat === 'Beef') return 2;
+    return 0;
+  };
 
-      if (existing) {
-        return prev.map(i => 
-          (i.id === item.id && (!isCustom || (i.selectedProtein === protein && i.selectedSide === side)))
-            ? { ...i, quantity: i.quantity + 1 } 
-            : i
+  const addToOrder = (item: MenuItem, meat?: string, side?: string) => {
+    try {
+      const baseEffectivePrice = getEffectivePrice(item);
+      const price = baseEffectivePrice + getMeatIncrement(meat);
+      const deal = getItemDeal(item.id);
+
+      setOrderItems(prev => {
+        const isCustom = item.category && CUSTOMISABLE_CATEGORIES.includes(item.category) && (item.availableMeats?.length > 0 || item.availableSides?.length > 0);
+        const existing = prev.find(i => 
+          i.id === item.id && 
+          (!isCustom || (i.selectedMeat === meat && i.selectedSide === side))
         );
-      }
-      return [...prev, { ...item, quantity: 1, selectedProtein: protein, selectedSide: side }];
-    });
-    toast.success(`Added ${item.name} to order`);
+
+        if (existing) {
+          return prev.map(i => 
+            (i.id === item.id && (!isCustom || (i.selectedMeat === meat && i.selectedSide === side)))
+              ? { ...i, quantity: i.quantity + 1, basePrice: price } 
+              : i
+          );
+        }
+        return [...prev, { 
+          ...item, 
+          basePrice: price, // Use the deal price as the base price for this order item
+          quantity: 1, 
+          selectedMeat: meat, 
+          selectedSide: side,
+          isDealActive: !!deal
+        }];
+      });
+      toast.success(`Added ${item.name} to order`);
+    } catch (e: any) {
+      console.error("addToOrder error:", e);
+      toast.error(`Error adding to order: ${e.message}`);
+    }
   };
 
   const updateQuantity = (uniqueKey: string, delta: number) => {
     setOrderItems(prev => prev.map((item) => {
-      const currentKey = `${item.id}-${item.selectedProtein}-${item.selectedSide}`;
+      const currentKey = `${item.id}-${item.selectedMeat || 'none'}-${item.selectedSide || 'none'}`;
       if (currentKey === uniqueKey) {
         const newQty = Math.max(0, item.quantity + delta);
         return { ...item, quantity: newQty };
@@ -81,11 +163,7 @@ export default function Billing() {
     }).filter(i => i.quantity > 0));
   };
 
-  const removeFromOrder = (uniqueKey: string) => {
-    setOrderItems(prev => prev.filter(item => `${item.id}-${item.selectedProtein}-${item.selectedSide}` !== uniqueKey));
-  };
-
-  const subtotal = orderItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const subtotal = orderItems.reduce((acc, item) => acc + (item.basePrice * item.quantity), 0);
   const effectiveDeliveryCharge = orderType === "delivery" ? deliveryCharge : 0;
   const total = subtotal + effectiveDeliveryCharge;
 
@@ -95,284 +173,312 @@ export default function Billing() {
     address: address,
     orderType: orderType,
     items: orderItems.map(i => ({
-      name: i.name,
+      name: i.isDealActive ? `[DEAL] ${i.name}` : i.name,
       quantity: i.quantity,
-      price: i.price,
-      selectedProtein: i.selectedProtein,
+      price: i.basePrice,
+      selectedProtein: i.selectedMeat,
       selectedSide: i.selectedSide,
+      category: i.category,
+      total: i.basePrice * i.quantity
     })),
     subtotal,
     deliveryCharge: effectiveDeliveryCharge,
     total,
-    date: new Date().toLocaleDateString('en-GB'),
-    time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    date: new Date().toLocaleDateString(),
+    time: new Date().toLocaleTimeString()
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-brand-text">Billing & POS</h1>
-          <p className="text-brand-muted font-body">Create orders and generate professional invoices.</p>
+    <div className="h-[calc(100vh-10rem)] flex flex-col md:flex-row gap-8 animate-in fade-in duration-700">
+      {/* Menu Section */}
+      <div className="flex-1 flex flex-col min-w-0 bg-white/60 backdrop-blur-sm rounded-[2.5rem] border border-brand-lavender-mid overflow-hidden shadow-sm">
+        <div className="p-8 border-b border-brand-lavender-mid bg-white/50">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <h1 className="text-2xl font-display font-bold text-brand-text">Menu Selection</h1>
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
+              <input 
+                type="text"
+                placeholder="Quick search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-brand-lavender/30 border border-brand-lavender-mid rounded-2xl font-body text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/20 transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+          {isLoading ? (
+            <div className="h-full flex flex-col items-center justify-center text-brand-muted">
+              <Loader2 className="w-10 h-10 animate-spin mb-4" />
+              <p className="font-display font-medium">Loading Menu...</p>
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-brand-muted italic">
+              <p>No items found.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredItems.map((item) => {
+                const deal = getItemDeal(item.id);
+                const price = getEffectivePrice(item);
+                
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleItemClick(item)}
+                    className="relative flex flex-col items-start p-4 bg-white border border-brand-lavender-mid rounded-3xl text-left hover:border-brand-violet hover:shadow-lg hover:shadow-brand-violet/5 transition-all group active:scale-[0.98]"
+                  >
+                    {deal && (
+                      <div className="absolute top-3 right-3 bg-brand-violet text-white text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-tighter animate-pulse flex items-center gap-1 shadow-lg shadow-brand-violet/20">
+                        <Tag className="w-2 h-2" />
+                        Deal Active
+                      </div>
+                    )}
+                    <div className="w-10 h-10 rounded-2xl bg-brand-lavender flex items-center justify-center text-xl mb-3 shadow-sm group-hover:scale-110 transition-transform">
+                      {item.emoji || "🍛"}
+                    </div>
+                    <p className="font-display font-bold text-brand-text text-sm mb-1 leading-tight">{item.name}</p>
+                    <div className="flex flex-col mt-auto">
+                      {deal && (
+                        <span className="text-[10px] text-brand-muted line-through font-bold">£{item.basePrice.toFixed(2)}</span>
+                      )}
+                      <p className="font-display font-bold text-brand-violet text-base">£{price.toFixed(2)}</p>
+                    </div>
+                    <div className="flex items-center justify-between w-full mt-1">
+                      <p className="text-[10px] text-brand-muted uppercase tracking-widest font-bold">{item.category}</p>
+                      {item.allergens && item.allergens.length > 0 && (
+                        <div className="flex gap-1" title={item.allergens.join(", ")}>
+                          {item.allergens.slice(0, 2).map(a => (
+                            <span key={a} className="text-[8px] px-1 bg-amber-100 text-amber-700 rounded font-black uppercase">
+                              {a.substring(0, 3)}
+                            </span>
+                          ))}
+                          {item.allergens.length > 2 && (
+                            <span className="text-[8px] px-1 bg-amber-100 text-amber-700 rounded font-black">+{item.allergens.length - 2}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left: Item Search & Selection */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-[2rem] border border-brand-lavender-mid p-6 shadow-sm">
-            <div className="relative mb-6">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted" />
-              <input
-                type="text"
-                placeholder="Search items by name or category..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 bg-brand-lavender/20 border border-brand-lavender-mid rounded-2xl font-body text-base focus:outline-none focus:ring-2 focus:ring-brand-violet/20 transition-all"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-hide">
-              {filteredItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleItemClick(item)}
-                  className="flex items-center gap-4 p-4 rounded-2xl border border-brand-lavender-mid hover:border-brand-violet/40 hover:bg-brand-lavender/10 transition-all text-left group"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-brand-lavender flex items-center justify-center text-2xl shadow-inner shrink-0 group-hover:scale-110 transition-transform">
-                    {item.emoji}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-display font-bold text-brand-text truncate">{item.name}</p>
-                    <p className="text-sm font-display font-bold text-brand-violet">£{item.price.toFixed(2)}</p>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-brand-violet/10 flex items-center justify-center text-brand-violet opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Plus className="w-4 h-4" />
-                  </div>
-                </button>
-              ))}
-            </div>
+      {/* Order Summary */}
+      <div className="w-full md:w-[400px] flex flex-col bg-brand-violet rounded-[2.5rem] text-white shadow-violet-glow overflow-hidden">
+        <div className="p-8 border-b border-white/10 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-display font-bold">Current Order</h2>
+            <p className="text-xs text-white/60 font-body mt-1">Order #{(Math.random()*1000).toFixed(0)}</p>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
+            <ShoppingBag className="w-5 h-5" />
           </div>
         </div>
 
-        {/* Right: Order Summary & Billing */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-[2rem] border border-brand-lavender-mid shadow-sm overflow-hidden flex flex-col h-full sticky top-24">
-            <div className="p-6 border-b border-brand-lavender-mid bg-brand-lavender/20 flex items-center justify-between">
-              <h2 className="text-xl font-display font-bold text-brand-text flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-brand-violet" />
-                Current Order
-              </h2>
-              <div className="flex bg-brand-lavender/50 p-1 rounded-xl border border-brand-lavender-mid">
-                <button 
-                  onClick={() => setOrderType("collection")}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                    orderType === "collection" 
-                      ? "bg-brand-violet text-white shadow-sm" 
-                      : "text-brand-muted hover:text-brand-text"
-                  }`}
-                >
-                  <ShoppingBag className="w-3 h-3" />
-                  Collection
-                </button>
-                <button 
-                  onClick={() => setOrderType("delivery")}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-display font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                    orderType === "delivery" 
-                      ? "bg-brand-violet text-white shadow-sm" 
-                      : "text-brand-muted hover:text-brand-text"
-                  }`}
-                >
-                  <Bike className="w-3 h-3" />
-                  Delivery
-                </button>
-              </div>
+        <div className="flex-1 overflow-y-auto p-8 space-y-6">
+          {orderItems.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-white/40 text-center">
+              <ShoppingBag className="w-12 h-12 mb-4 opacity-20" />
+              <p className="font-display text-sm">Cart is empty</p>
             </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[400px]">
-              {orderItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 rounded-full bg-brand-lavender mx-auto flex items-center justify-center mb-4 text-brand-muted">
-                    <Plus className="w-8 h-8" />
-                  </div>
-                  <p className="text-brand-muted font-body">Order is empty.</p>
-                </div>
-              ) : (
-                orderItems.map((item, idx) => {
-                  const uniqueKey = `${item.id}-${item.selectedProtein}-${item.selectedSide}`;
-                  return (
-                    <div key={`${uniqueKey}-${idx}`} className="flex items-start gap-3 py-3 border-b border-brand-lavender/50 last:border-0">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-display font-bold text-sm text-brand-text truncate">{item.name}</p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {item.selectedProtein && (
-                            <span className="text-[10px] font-bold bg-brand-violet/10 text-brand-violet px-1.5 py-0.5 rounded uppercase">🥩 {item.selectedProtein}</span>
-                          )}
-                          {item.selectedSide && (
-                            <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 px-1.5 py-0.5 rounded uppercase">🍚 {item.selectedSide}</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-brand-muted font-body mt-1">£{(item.price * item.quantity).toFixed(2)}</p>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2 bg-brand-lavender/30 rounded-lg p-1">
-                          <button onClick={() => updateQuantity(uniqueKey, -1)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-white text-brand-text transition-colors">
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="text-sm font-display font-bold w-4 text-center">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(uniqueKey, 1)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-white text-brand-text transition-colors">
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <button onClick={() => removeFromOrder(uniqueKey)} className="text-brand-muted hover:text-red-500 transition-colors p-1">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+          ) : (
+            orderItems.map((item) => {
+               const uniqueKey = `${item.id}-${item.selectedMeat || 'none'}-${item.selectedSide || 'none'}`;
+               return (
+                <div key={uniqueKey} className="flex items-center justify-between animate-in slide-in-from-right-4 duration-300">
+                  <div className="min-w-0 flex-1 pr-4">
+                    <div className="flex items-center gap-2">
+                      <p className="font-display font-bold text-sm truncate">{item.name}</p>
+                      {item.isDealActive && (
+                        <span className="bg-white/20 text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest">Deal</span>
+                      )}
                     </div>
-                  );
-                })
-              )}
+                    {(item.selectedMeat || item.selectedSide) && (
+                      <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest">
+                        {[item.selectedMeat, item.selectedSide].filter(Boolean).join(" • ")}
+                      </p>
+                    )}
+                    <p className="text-xs font-bold text-white/80 mt-1">£{(item.basePrice * item.quantity).toFixed(2)}</p>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white/10 px-3 py-1.5 rounded-xl border border-white/5">
+                    <button onClick={() => updateQuantity(uniqueKey, -1)} className="hover:text-amber-400 transition-colors">
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="font-display font-bold text-sm min-w-[1rem] text-center">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(uniqueKey, 1)} className="hover:text-amber-400 transition-colors">
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+               );
+            })
+          )}
+        </div>
+
+        <div className="p-8 bg-white/5 space-y-6">
+          <div className="flex p-1 bg-white/10 rounded-2xl">
+            <button 
+              onClick={() => setOrderType("collection")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-display font-bold text-xs transition-all ${orderType === "collection" ? 'bg-white text-brand-violet shadow-lg' : 'hover:bg-white/5'}`}
+            >
+              <ShoppingBag className="w-4 h-4" /> Collection
+            </button>
+            <button 
+              onClick={() => setOrderType("delivery")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-display font-bold text-xs transition-all ${orderType === "delivery" ? 'bg-white text-brand-violet shadow-lg' : 'hover:bg-white/5'}`}
+            >
+              <Bike className="w-4 h-4" /> Delivery
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between text-xs font-body text-white/60">
+              <span>Subtotal</span>
+              <span>£{subtotal.toFixed(2)}</span>
             </div>
-
-            <div className="p-6 bg-brand-lavender/5 border-t border-brand-lavender-mid space-y-4">
-              {orderType === "delivery" && (
-                <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
-                    <input
-                      type="text"
-                      placeholder="Delivery Address"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-lavender-mid rounded-xl font-body text-xs focus:outline-none focus:ring-2 focus:ring-brand-violet/20 transition-all"
-                    />
-                  </div>
-                  <div className="relative">
-                    <Truck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
-                    <input
-                      type="number"
-                      placeholder="Delivery Charge"
-                      value={deliveryCharge || ""}
-                      onChange={(e) => setDeliveryCharge(parseFloat(e.target.value) || 0)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-lavender-mid rounded-xl font-body text-xs focus:outline-none focus:ring-2 focus:ring-brand-violet/20 transition-all"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2 pt-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-brand-muted font-body">Subtotal</span>
-                  <span className="text-brand-text font-display font-bold">£{subtotal.toFixed(2)}</span>
-                </div>
-                {orderType === "delivery" && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-brand-muted font-body">Delivery</span>
-                    <span className="text-brand-text font-display font-bold">£{deliveryCharge.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-xl pt-2 border-t border-brand-lavender-mid">
-                  <div className="flex flex-col">
-                    <span className="text-brand-text font-display font-bold uppercase tracking-tight">Total</span>
-                    <span className="text-[10px] text-brand-violet font-display font-bold uppercase tracking-wider">{orderType}</span>
-                  </div>
-                  <span className="text-brand-violet font-display font-bold">£{total.toFixed(2)}</span>
-                </div>
+          {orderType === "delivery" && (
+            <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+              <input
+                type="tel"
+                value={deliveryPhone}
+                onChange={e => setDeliveryPhone(e.target.value)}
+                placeholder="Customer phone number"
+                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-sm font-body text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
+              />
+              <input
+                type="text"
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+                placeholder="Delivery address"
+                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-sm font-body text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
+              />
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-white/60 font-body whitespace-nowrap">Delivery charge £</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={deliveryCharge}
+                  onChange={e => setDeliveryCharge(Number(e.target.value))}
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm font-body text-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                />
               </div>
-
-              <button
-                disabled={orderItems.length === 0}
-                onClick={() => setShowInvoice(true)}
-                className="w-full py-4 bg-brand-violet text-white rounded-2xl font-display font-bold shadow-violet-glow hover:bg-brand-violet-dark transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                Generate Invoice
-                <ChevronRight className="w-4 h-4" />
-              </button>
+            </div>
+          )}
+            <div className="flex justify-between text-xl font-display font-bold pt-3 border-t border-white/10">
+              <span>Total</span>
+              <span>£{total.toFixed(2)}</span>
             </div>
           </div>
+
+          <button 
+            disabled={orderItems.length === 0}
+            onClick={async () => {
+              try {
+                await addDoc(collection(db, "orders"), {
+                  items: orderItems.map(i => ({
+                    name: i.name,
+                    quantity: i.quantity,
+                    basePrice: i.basePrice,
+                    selectedProtein: i.selectedMeat || null,
+                    selectedSide: i.selectedSide || null,
+                  })),
+                  subtotal,
+                  deliveryCharge: effectiveDeliveryCharge,
+                  total,
+                  orderType,
+                  address: orderType === "delivery" ? (address || null) : null,
+                  customerPhone: orderType === "delivery" ? (deliveryPhone || null) : null,
+                  customerName: "Counter Sale (POS)",
+                  status: "preparing",
+                  source: "pos",
+                  createdAt: serverTimestamp(),
+                });
+              } catch (e) {
+                console.error("Failed to save POS order:", e);
+              }
+              setShowInvoice(true);
+            }}
+            className="w-full bg-white text-brand-violet py-5 rounded-[1.5rem] font-display font-bold text-sm hover:bg-amber-400 hover:text-brand-text transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-xl"
+          >
+            Process Payment & Print
+          </button>
         </div>
       </div>
 
       {/* Customization Modal */}
-      {customizingItem && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-lg overflow-hidden">
-            <div className="bg-brand-lavender/30 px-6 py-5 border-b border-brand-lavender-mid flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-display font-bold text-brand-text">Customize {customizingItem.name}</h2>
-                <p className="text-xs text-brand-muted font-body">Select meat and side for this dish</p>
+      <Dialog open={!!customizingItem} onOpenChange={(open) => !open && setCustomizingItem(null)}>
+        <DialogContent className="bg-white rounded-3xl p-8 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-display font-bold text-brand-text">Customize {customizingItem?.name}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-6">
+            {customizingItem?.availableMeats && customizingItem.availableMeats.length > 0 && (
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-brand-muted uppercase tracking-wider">Select Meat</label>
+                <div className="flex flex-wrap gap-2">
+                  {customizingItem.availableMeats.map(meat => (
+                    <button
+                      key={meat}
+                      onClick={() => setTempMeat(meat)}
+                      className={`px-4 py-2 rounded-xl text-sm font-display font-bold border-2 transition-all ${
+                        tempMeat === meat 
+                          ? "border-brand-violet bg-brand-violet/10 text-brand-violet"
+                          : "border-brand-lavender-mid text-brand-muted hover:border-brand-violet/50"
+                      }`}
+                    >
+                      {meat}
+                      {getMeatIncrement(meat) > 0 && <span className="opacity-70 text-[10px] ml-1">(+£{getMeatIncrement(meat).toFixed(2)})</span>}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <button onClick={() => setCustomizingItem(null)} className="p-2 rounded-xl hover:bg-white text-brand-muted transition-all">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {customizingItem.proteinOptions && customizingItem.proteinOptions.length > 0 && (
-                <div className="space-y-3">
-                  <label className="text-xs font-display font-bold text-brand-muted uppercase tracking-widest flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-violet"></span>
-                    Select Meat Option
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {customizingItem.proteinOptions.map(p => (
-                      <button
-                        key={p}
-                        onClick={() => setTempProtein(p)}
-                        className={`px-4 py-3 rounded-xl border font-display text-sm font-bold transition-all text-left flex items-center justify-between ${
-                          tempProtein === p 
-                            ? "bg-brand-violet text-white border-brand-violet shadow-violet-glow" 
-                            : "bg-brand-lavender/20 border-brand-lavender-mid text-brand-text hover:bg-brand-lavender"
-                        }`}
-                      >
-                        {p}
-                        {tempProtein === p && <Check className="w-4 h-4" />}
-                      </button>
-                    ))}
-                  </div>
+            )}
+            
+            {customizingItem?.availableSides && customizingItem.availableSides.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-brand-muted uppercase tracking-widest">Select Side</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {customizingItem.availableSides.map(side => (
+                    <button
+                      key={side}
+                      onClick={() => setTempSide(side)}
+                      className={`p-3 rounded-2xl border-2 font-display font-bold text-xs transition-all ${tempSide === side ? 'border-brand-violet bg-brand-violet/5 text-brand-violet' : 'border-brand-lavender hover:border-brand-lavender-mid'}`}
+                    >
+                      {side}
+                    </button>
+                  ))}
                 </div>
-              )}
-
-              {customizingItem.sideOptions && customizingItem.sideOptions.length > 0 && (
-                <div className="space-y-3">
-                  <label className="text-xs font-display font-bold text-brand-muted uppercase tracking-widest flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    Select Side Option
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {customizingItem.sideOptions.map(s => (
-                      <button
-                        key={s}
-                        onClick={() => setTempSide(s)}
-                        className={`px-4 py-3 rounded-xl border font-display text-sm font-bold transition-all text-left flex items-center justify-between ${
-                          tempSide === s 
-                            ? "bg-emerald-500 text-white border-emerald-500 shadow-md" 
-                            : "bg-brand-lavender/20 border-brand-lavender-mid text-brand-text hover:bg-brand-lavender"
-                        }`}
-                      >
-                        {s}
-                        {tempSide === s && <Check className="w-4 h-4" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 bg-brand-lavender/10 border-t border-brand-lavender-mid flex gap-3">
-              <button onClick={() => setCustomizingItem(null)} className="flex-1 py-3.5 rounded-xl border border-brand-lavender-mid font-display font-bold text-brand-muted hover:bg-white transition-all">
-                Cancel
-              </button>
-              <button onClick={confirmCustomization} className="flex-1 py-3.5 bg-brand-violet text-white rounded-xl font-display font-bold shadow-violet-glow hover:bg-brand-violet-dark transition-all">
-                Add to Order
-              </button>
-            </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+          
+          <button 
+            onClick={confirmCustomization}
+            className="w-full bg-brand-violet text-white mt-8 py-6 rounded-2xl font-display font-bold hover:bg-brand-violet-dark transition-all active:scale-95"
+          >
+            Confirm & Add to Order
+          </button>
+        </DialogContent>
+      </Dialog>
 
+      {/* Invoice Modal */}
       {showInvoice && (
-        <Invoice data={invoiceData} onClose={() => setShowInvoice(false)} />
+        <Invoice 
+          data={invoiceData} 
+          onClose={() => {
+            setShowInvoice(false);
+            setOrderItems([]);
+            toast.success("Order completed successfully!");
+          }} 
+        />
       )}
     </div>
   );

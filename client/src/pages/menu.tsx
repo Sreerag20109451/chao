@@ -1,17 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MenuCard from "@/components/MenuCard";
-import { menuItems, categories } from "@/lib/menuData";
-import { Flame as FlameIcon, Leaf as LeafIcon, ChefHat as ChefHatIcon, WheatOff as WheatOffIcon, Utensils } from "lucide-react";
+import { categories, MenuItem, Deal } from "@/lib/menuData";
+import { listenToMenu } from "@/lib/firebase/menu/service";
+import { listenToDeals } from "@/lib/firebase/deals/service";
+import { Flame as FlameIcon, Leaf as LeafIcon, ChefHat as ChefHatIcon, WheatOff as WheatOffIcon, Utensils, Loader2 } from "lucide-react";
 
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filtered = menuItems
-    .filter((item) => item.available)
+  useEffect(() => {
+    const unsubscribeMenu = listenToMenu((data) => {
+      setItems(data);
+      setIsLoading(false);
+    });
+    const unsubscribeDeals = listenToDeals((data) => {
+      setDeals(data);
+    });
+    return () => {
+      unsubscribeMenu();
+      unsubscribeDeals();
+    };
+  }, []);
+
+  const filtered = items
+    .filter((item) => item.available !== false) // Default to true if missing
     .filter((item) => 
       activeCategory === "all" ? true : item.category === activeCategory
     );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-32 pb-20 flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-brand-violet animate-spin mb-4" />
+        <p className="font-display font-bold text-brand-muted">Loading fresh menu...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-32 pb-20">
@@ -48,21 +76,6 @@ export default function MenuPage() {
           </div>
         </Tabs>
 
-        <div className="flex flex-wrap gap-3 mb-8">
-          <span className="font-display text-xs font-medium text-brand-muted uppercase tracking-wide self-center">
-            Legend:
-          </span>
-          {[
-            { icon: <FlameIcon className="w-3 h-3" />, label: "Spicy", cls: "text-red-600" },
-            { icon: <LeafIcon className="w-3 h-3" />, label: "Vegan", cls: "text-emerald-700" },
-            { icon: <ChefHatIcon className="w-3 h-3" />, label: "Chef's Pick", cls: "text-violet-700" },
-            { icon: <WheatOffIcon className="w-3 h-3" />, label: "Gluten-Free", cls: "text-amber-700" },
-          ].map(({ icon, label, cls }) => (
-            <span key={label} className={`inline-flex items-center gap-1.5 text-xs font-display font-medium ${cls}`}>
-              {icon} {label}
-            </span>
-          ))}
-        </div>
 
         <p className="font-body text-sm text-brand-muted mb-6">
           Showing <strong>{filtered.length}</strong> dishes
@@ -71,7 +84,7 @@ export default function MenuPage() {
         {filtered.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filtered.map((item) => (
-              <MenuCard key={item.id} item={item} />
+              <MenuCard key={item.id} item={item} deals={deals} />
             ))}
           </div>
         ) : (

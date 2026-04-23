@@ -21,17 +21,26 @@ import {
   Phone
 } from "lucide-react";
 import AddressModal from "@/components/AddressModal";
-import { updateProfile, setPrimaryAddress } from "@/lib/features/authSlice";
+import { updateProfile, setPrimaryAddress, addOrder } from "@/lib/features/authSlice";
+import { useStoreStatus } from "@/hooks/useStoreStatus";
+import { toast } from "sonner";
+import { placeOrder } from "@/lib/firebase/orders/service";
+import { getDocs, collection, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function CartPage() {
   const { items, orderType } = useSelector((state: RootState) => state.cart);
   const { user } = useSelector((state: RootState) => state.auth);
+  const { isOpen: isStoreOpen, isLoaded } = useStoreStatus();
   const dispatch = useDispatch();
 
   const [phone, setPhone] = useState(user?.phone || "");
+  const [placedOrderId, setPlacedOrderId] = useState<string | null>(null);
 
   const subtotal = items.reduce(
-    (acc, item) => acc + item.price * item.quantity, 
+    (acc, item) => acc + (item.basePrice || 0) * item.quantity, 
     0
   );
   const serviceCharge = subtotal * 0.05;
@@ -39,7 +48,7 @@ export default function CartPage() {
   const total = subtotal + serviceCharge + deliveryFee;
 
   const currentAddress = user?.addresses[user?.primaryAddressIndex || 0];
-  const isCheckoutDisabled = orderType === "delivery" && (!currentAddress || !phone.trim());
+  const isCheckoutDisabled = !isStoreOpen || (orderType === "delivery" && (!currentAddress || !phone.trim()));
 
   useEffect(() => {
     if (user?.phone && !phone) setPhone(user.phone);
@@ -87,24 +96,48 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-6">
             {orderType === "delivery" && (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
-                      <Phone className="w-6 h-6 text-brand-violet" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-display font-bold text-brand-text text-lg mb-2">Contact Number</h3>
-                      <input 
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        onBlur={() => dispatch(updateProfile({ phone }))}
-                        placeholder="Required for delivery..."
-                        className="w-full bg-white border border-brand-lavender-mid rounded-xl px-4 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/20"
-                      />
+                {!user?.phone && (
+                  <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 shadow-sm">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
+                        <Phone className="w-6 h-6 text-brand-violet" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-display font-bold text-brand-text text-lg mb-2">Contact Number</h3>
+                        <div className="flex gap-2">
+                          <input 
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="Required for delivery..."
+                            className="w-full bg-white border border-brand-lavender-mid rounded-xl px-4 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/20"
+                          />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (phone.trim()) {
+                                dispatch(updateProfile({ phone }));
+                                try {
+                                  const { auth, db } = await import("@/lib/firebase/config");
+                                  if (auth.currentUser) {
+                                    const { doc, updateDoc } = await import("firebase/firestore");
+                                    await updateDoc(doc(db, "users", auth.currentUser.uid), { phone });
+                                    toast.success("Phone number saved!");
+                                  }
+                                } catch (e) {
+                                  console.error(e);
+                                }
+                              }
+                            }}
+                            className="bg-brand-violet hover:bg-brand-violet-dark text-white rounded-xl px-6 py-2 font-display font-bold text-sm shadow-sm transition-all"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
                   <div className="flex items-start gap-4 flex-1">
@@ -131,7 +164,7 @@ export default function CartPage() {
                         </div>
                       ) : (
                         <p className="font-body text-brand-muted text-sm max-w-sm">
-                          No delivery address added yet.
+                          No delivery address added yet. Please add one.
                         </p>
                       )}
                     </div>
@@ -177,7 +210,7 @@ export default function CartPage() {
                           </p>
                         </div>
                         <span className="font-display font-bold text-brand-text text-lg whitespace-nowrap">
-                          £{(item.price * item.quantity).toFixed(2)}
+                          £{((item.basePrice || 0) * item.quantity).toFixed(2)}
                         </span>
                       </div>
                       <div className="mt-4 flex items-center justify-between">
@@ -262,8 +295,198 @@ export default function CartPage() {
                 </div>
               </div>
 
+              {!isStoreOpen && isLoaded && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-center">
+                  <p className="text-sm font-display font-bold text-red-600">Store is currently closed.</p>
+                  <p className="text-xs font-body text-red-500 mt-1">Please check back during our opening hours.</p>
+                </div>
+              )}
+              
               <button 
                 disabled={isCheckoutDisabled}
+                onClick={async () => {
+                  if (!isStoreOpen) {
+                    toast.error("Sorry, the store is closed right now.");
+                    return;
+                  }
+                  
+                  try {
+                    // Update profile if they provided new phone
+                    if (phone && phone !== user?.phone) {
+                      dispatch(updateProfile({ phone }));
+                    }
+
+                    const orderData = {
+                      items,
+                      subtotal,
+                      deliveryCharge: deliveryFee,
+                      total,
+                      orderType,
+                      address: orderType === "delivery" ? currentAddress : null,
+                      customerName: user?.name || "Guest",
+                      customerPhone: phone || user?.phone || null,
+                    };
+                    
+                    const docRef = await placeOrder(user?.email || "guest", orderData);
+                    
+                    // === Generate POS-style Invoice PDF ===
+                    const doc = new jsPDF({ unit: "mm", format: "a4" });
+                    const pageW = doc.internal.pageSize.getWidth();
+                    const now = new Date();
+                    const dateStr = now.toLocaleDateString("en-IE");
+                    const timeStr = now.toLocaleTimeString("en-IE", { hour: "2-digit", minute: "2-digit" });
+
+                    // ── Fetch active driver ──
+                    let driverName = "";
+                    let driverPhone = "";
+                    if (orderType === "delivery") {
+                      try {
+                        const driversSnap = await getDocs(
+                          query(collection(db, "drivers"), where("isWorkingToday", "==", true))
+                        );
+                        if (!driversSnap.empty) {
+                          const d = driversSnap.docs[0].data();
+                          driverName = d.name || "";
+                          driverPhone = d.phone || "";
+                        }
+                      } catch (err) { console.error(err); }
+                    }
+
+                    // ── Header ──
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(18);
+                    doc.text("CHAO THAI", 14, 20);
+
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    doc.text("8 O'Connell St, Trinity Without", 14, 27);
+                    doc.text("Waterford, X91 CH61", 14, 31);
+                    doc.text("T: 089 447 6628  |  W: www.chaothai.ie", 14, 35);
+
+                    // Right side – Invoice label & meta
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(14);
+                    doc.setTextColor(0);
+                    doc.text("INVOICE", pageW - 14, 20, { align: "right" });
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    doc.text(`No: #${docRef.id.slice(0, 8).toUpperCase()}`, pageW - 14, 27, { align: "right" });
+                    doc.text(`Date: ${dateStr}`, pageW - 14, 31, { align: "right" });
+                    doc.text(`Time: ${timeStr}`, pageW - 14, 35, { align: "right" });
+
+                    // Divider
+                    doc.setDrawColor(0);
+                    doc.setLineWidth(0.5);
+                    doc.line(14, 40, pageW - 14, 40);
+
+                    // ── Details grid ──
+                    doc.setTextColor(120);
+                    doc.setFontSize(7);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("SERVICE TYPE", 14, 48);
+                    doc.text("CUSTOMER DETAILS", pageW / 2, 48);
+
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(9);
+                    doc.setTextColor(0);
+                    doc.text(orderType.toUpperCase(), 14, 54);
+
+                    if (orderType === "delivery" && driverName) {
+                      doc.setFontSize(8);
+                      doc.setTextColor(80);
+                      doc.text(`Driver: ${driverName}`, 14, 59);
+                      if (driverPhone) doc.text(`Mobile: ${driverPhone}`, 14, 63);
+                    }
+
+                    doc.setFontSize(9);
+                    doc.setTextColor(0);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(user?.name || "Guest", pageW / 2, 54);
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8);
+                    doc.setTextColor(80);
+                    if (phone || user?.phone) doc.text(`${phone || user?.phone}`, pageW / 2, 59);
+                    if (orderType === "delivery" && currentAddress) {
+                      doc.text(currentAddress, pageW / 2, 64, { maxWidth: pageW / 2 - 14 });
+                    } else {
+                      doc.text("Collection / Takeaway", pageW / 2, 64);
+                    }
+
+                    // ── Items table ──
+                    const tableStartY = orderType === "delivery" && driverPhone ? 74 : 70;
+                    autoTable(doc, {
+                      startY: tableStartY,
+                      head: [["Item Description", "Qty", "Unit", "Amount"]],
+                      body: items.map(item => [
+                        item.name + (item.selectedProtein ? ` (${item.selectedProtein})` : "") + (item.selectedSide ? ` / ${item.selectedSide}` : ""),
+                        item.quantity,
+                        `\u00a3${(item.basePrice || 0).toFixed(2)}`,
+                        `\u00a3${((item.basePrice || 0) * item.quantity).toFixed(2)}`
+                      ]),
+                      headStyles: { fillColor: [30, 30, 30], textColor: 255, fontSize: 8, fontStyle: "bold" },
+                      bodyStyles: { fontSize: 8 },
+                      alternateRowStyles: { fillColor: [248, 248, 248] },
+                      columnStyles: { 1: { halign: "center" }, 2: { halign: "right" }, 3: { halign: "right" } },
+                      margin: { left: 14, right: 14 },
+                    });
+
+                    // ── Totals ──
+                    const tY = (doc as any).lastAutoTable?.finalY || tableStartY + 30;
+                    doc.setDrawColor(0);
+                    doc.setLineWidth(0.3);
+                    doc.line(pageW - 80, tY + 2, pageW - 14, tY + 2);
+
+                    const addRow = (label: string, val: string, y: number, bold = false) => {
+                      doc.setFont("helvetica", bold ? "bold" : "normal");
+                      doc.setFontSize(bold ? 10 : 8);
+                      doc.setTextColor(bold ? 0 : 80);
+                      doc.text(label, pageW - 80, y);
+                      doc.text(val, pageW - 14, y, { align: "right" });
+                    };
+                    addRow("Subtotal",        `\u00a3${subtotal.toFixed(2)}`,     tY + 8);
+                    addRow("Service Charge",  `\u00a3${serviceCharge.toFixed(2)}`,tY + 14);
+                    if (orderType === "delivery") addRow("Delivery", `\u00a3${deliveryFee.toFixed(2)}`, tY + 20);
+                    const totalY = orderType === "delivery" ? tY + 28 : tY + 22;
+                    doc.setLineWidth(0.4);
+                    doc.line(pageW - 80, totalY - 2, pageW - 14, totalY - 2);
+                    addRow("TOTAL AMOUNT",    `\u00a3${total.toFixed(2)}`,        totalY + 4, true);
+
+                    // ── Footer ──
+                    const footY = totalY + 22;
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(8);
+                    doc.setTextColor(80);
+                    doc.text("THANK YOU FOR YOUR ORDER", pageW / 2, footY, { align: "center" });
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(7);
+                    doc.setTextColor(140);
+                    doc.text("This is a computer-generated document.", pageW / 2, footY + 5, { align: "center" });
+
+                    doc.save(`chao-invoice-${docRef.id.slice(0, 8)}.pdf`);
+
+                    toast.success("Order placed successfully!");
+                    dispatch(clearCart());
+                    
+                    // Add order to user's profile
+                    const newClientOrder = {
+                      id: docRef.id,
+                      date: new Date().toLocaleDateString(),
+                      total: total,
+                      status: "pending" as any,
+                      items: items.map(i => ({ name: i.name, quantity: i.quantity, price: i.basePrice || 0 })),
+                      orderType: orderType,
+                    };
+                    dispatch(addOrder(newClientOrder));
+                    
+                    // Show modal
+                    setPlacedOrderId(docRef.id);
+                  } catch (e) {
+                    console.error("Checkout failed:", e);
+                    toast.error("Failed to place order.");
+                  }
+                }}
                 className="w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-2xl py-5 flex items-center justify-center gap-3 shadow-violet-glow transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Checkout Now
@@ -273,6 +496,48 @@ export default function CartPage() {
           </aside>
         </div>
       </div>
+
+      {/* Order Tracking Modal */}
+      {placedOrderId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
+            <div className="p-8 text-center bg-brand-lavender/30 border-b border-brand-lavender-mid">
+              <div className="w-20 h-20 bg-brand-violet rounded-full flex items-center justify-center mx-auto mb-6 shadow-violet-glow">
+                <Store className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="font-display font-bold text-3xl text-brand-text mb-2">Order Received!</h2>
+              <p className="font-body text-brand-muted">Order #{placedOrderId}</p>
+            </div>
+            
+            <div className="p-8 space-y-6">
+              <div className="bg-orange-50 border border-orange-100 p-4 rounded-xl text-center">
+                <h3 className="font-display font-bold text-orange-600 mb-1">Status: Pending Confirmation</h3>
+                <p className="text-sm font-body text-orange-500">The restaurant has received your order and is reviewing it.</p>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-sm font-body border-b border-brand-lavender-mid pb-3">
+                  <span className="text-brand-muted">Estimated Prep Time:</span>
+                  <span className="font-bold text-brand-text">~20-30 mins</span>
+                </div>
+                {orderType === "delivery" && (
+                  <div className="flex justify-between items-center text-sm font-body">
+                    <span className="text-brand-muted">Estimated Delivery:</span>
+                    <span className="font-bold text-brand-text">~45 mins</span>
+                  </div>
+                )}
+              </div>
+              
+              <Link 
+                href="/orders" 
+                className="block w-full text-center bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-xl py-4 transition-all"
+              >
+                Track My Order
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

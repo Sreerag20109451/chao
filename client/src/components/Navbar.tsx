@@ -7,6 +7,7 @@ import { Menu, X, ShoppingCart, User, LogOut } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
 import { logout } from "@/lib/features/authSlice";
+import { logoutUser } from "@/lib/firebase";
 
 const navLinks = [
   { href: "/menu",    label: "Menu" },
@@ -23,10 +24,15 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    router.push("/");
-    setMobileOpen(false);
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      dispatch(logout());
+      router.push("/");
+      setMobileOpen(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   useEffect(() => {

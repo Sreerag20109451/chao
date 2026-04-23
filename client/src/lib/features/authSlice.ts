@@ -32,41 +32,8 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: {
-    name: "Sreerag Sathian",
-    email: "sreerag@example.com",
-    phone: "",
-    addresses: [],
-    primaryAddressIndex: 0,
-    orders: [
-      {
-        id: "CH-8821",
-        date: "2024-04-20",
-        total: 42.50,
-        status: "delivered",
-        orderType: "delivery",
-        items: [
-          { name: "Pad Thai", quantity: 2, price: 14.50 },
-          { name: "Thai Green Curry", quantity: 1, price: 13.50 }
-        ]
-      },
-      {
-        id: "CH-7912",
-        date: "2024-03-15",
-        total: 28.00,
-        status: "delivered",
-        orderType: "collection",
-        items: [
-          { name: "Massaman Curry", quantity: 2, price: 14.00 }
-        ]
-      }
-    ],
-    paymentMethods: [
-      { id: "pm-1", type: "visa", last4: "4242", isPrimary: true },
-      { id: "pm-2", type: "mastercard", last4: "8888", isPrimary: false }
-    ]
-  },
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
 };
 
 const authSlice = createSlice({
@@ -75,12 +42,12 @@ const authSlice = createSlice({
   reducers: {
     setCredentials: (
       state,
-      action: PayloadAction<{ name: string; email: string }>
+      action: PayloadAction<{ name: string; email: string; phone?: string; addresses?: string[]; primaryAddressIndex?: number }>
     ) => {
       state.user = {
         ...action.payload,
-        addresses: [],
-        primaryAddressIndex: 0,
+        addresses: action.payload.addresses || [],
+        primaryAddressIndex: action.payload.primaryAddressIndex || 0,
         orders: [],
         paymentMethods: []
       };
@@ -118,8 +85,13 @@ const authSlice = createSlice({
         if (action.payload.phone) state.user.phone = action.payload.phone;
       }
     },
+    addOrder: (state, action: PayloadAction<Order>) => {
+      if (state.user) {
+        state.user.orders.unshift(action.payload);
+      }
+    },
   },
 });
 
-export const { setCredentials, logout, addAddress, setPrimaryAddress, removeAddress, updateProfile } = authSlice.actions;
+export const { setCredentials, logout, addAddress, setPrimaryAddress, removeAddress, updateProfile, addOrder } = authSlice.actions;
 export default authSlice.reducer;

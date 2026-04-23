@@ -1,43 +1,124 @@
 "use client";
 
-import React, { useState } from "react";
-import { Bike, Search, Phone, CheckCircle2, Circle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Bike, Search, Phone, CheckCircle2, Circle, Plus, MoreVertical, Trash2, Edit2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-
-interface Driver {
-  id: string;
-  name: string;
-  phone: string;
-  status: "active" | "inactive";
-  isWorkingToday: boolean;
-}
+import { 
+  getDrivers, 
+  addDriver, 
+  updateDriver, 
+  deleteDriver, 
+  setPrimaryDriver,
+  Driver 
+} from "@/lib/firebase/drivers/service";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 export default function DriversPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [drivers, setDrivers] = useState<Driver[]>([
-    { id: "DRV-001", name: "Shyam", phone: "087 123 4567", status: "active", isWorkingToday: true },
-    { id: "DRV-002", name: "Jinu", phone: "089 987 6543", status: "active", isWorkingToday: false },
-    { id: "DRV-003", name: "Nahas", phone: "085 444 3322", status: "active", isWorkingToday: false },
-    { id: "DRV-004", name: "Renjith", phone: "086 555 1199", status: "active", isWorkingToday: false },
-    { id: "DRV-005", name: "Sumith", phone: "083 111 2233", status: "active", isWorkingToday: false },
-  ]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+  const [formData, setFormData] = useState({ name: "", phone: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const setAsActiveDriver = (driverId: string) => {
-    setDrivers(prev => prev.map(d => {
-      if (d.id === driverId) {
-        if (!d.isWorkingToday) {
-          toast.success(`${d.name} is now the primary driver for today.`);
-          return { ...d, isWorkingToday: true };
-        }
-        return d;
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
+
+  const fetchDrivers = async () => {
+    try {
+      const data = await getDrivers();
+      setDrivers(data);
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+      toast.error("Failed to load drivers");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleToggleActive = async (driverId: string) => {
+    const driver = drivers.find(d => d.id === driverId);
+    if (!driver) return;
+
+    try {
+      await setPrimaryDriver(driverId);
+      toast.success(`${driver.name} is now the primary driver.`);
+      fetchDrivers();
+    } catch (error) {
+      toast.error("Failed to set active driver");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("UI: Form submit triggered", formData);
+    if (!formData.name || !formData.phone) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (editingDriver) {
+        await updateDriver(editingDriver.id, formData);
+        toast.success("Driver updated successfully");
+      } else {
+        await addDriver({
+          ...formData,
+          status: "active",
+          isWorkingToday: false
+        });
+        toast.success("Driver added successfully");
       }
-      return { ...d, isWorkingToday: false };
-    }));
+      setIsModalOpen(false);
+      setEditingDriver(null);
+      setFormData({ name: "", phone: "" });
+      fetchDrivers();
+    } catch (error: any) {
+      console.error("Driver operation failed:", error);
+      const errorMessage = error?.message || "Check your internet or database permissions.";
+      toast.error(`Failed: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    toast.warning(`Are you sure you want to delete ${name}?`, {
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          try {
+            await deleteDriver(id);
+            toast.success("Driver deleted");
+            fetchDrivers();
+          } catch (error) {
+            toast.error("Failed to delete driver");
+          }
+        },
+      },
+    });
+  };
+
+  const openEditModal = (driver: Driver) => {
+    setEditingDriver(driver);
+    setFormData({ name: driver.name, phone: driver.phone });
+    setIsModalOpen(true);
   };
 
   const filteredDrivers = drivers.filter(d => 
-    d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.id.toLowerCase().includes(searchTerm.toLowerCase())
+    d.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const activeDriver = drivers.find(d => d.isWorkingToday);
@@ -49,6 +130,60 @@ export default function DriversPage() {
           <h1 className="text-3xl font-display font-bold text-brand-text">Delivery Drivers</h1>
           <p className="text-brand-muted font-body">Manage and select your active driver for today's shifts.</p>
         </div>
+        
+        <Dialog open={isModalOpen} onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) {
+            setEditingDriver(null);
+            setFormData({ name: "", phone: "" });
+          }
+        }}>
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="bg-brand-violet hover:bg-brand-violet-dark text-white rounded-xl font-display font-bold px-6 py-4 shadow-violet-glow flex items-center gap-2 transition-all active:scale-95"
+          >
+            <Plus className="w-5 h-5" />
+            Add New Driver
+          </button>
+          <DialogContent className="bg-white rounded-3xl p-8 max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-display font-bold text-brand-text">
+                {editingDriver ? "Edit Driver" : "Add New Driver"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input 
+                  id="name" 
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  placeholder="e.g. Shyam" 
+                  className="rounded-xl border-brand-lavender-mid"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input 
+                  id="phone" 
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  placeholder="e.g. 087 123 4567" 
+                  className="rounded-xl border-brand-lavender-mid"
+                />
+              </div>
+              <Button 
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-brand-violet hover:bg-brand-violet-dark text-white rounded-xl py-6 font-display font-bold"
+              >
+                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                {editingDriver ? "Update Driver" : "Create Driver"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Active Driver Highlight */}
@@ -102,11 +237,24 @@ export default function DriversPage() {
                 <th className="px-8 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Name</th>
                 <th className="px-8 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider text-center">Set for Today</th>
                 <th className="px-8 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Contact</th>
-                <th className="px-8 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Status</th>
+                <th className="px-8 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-lavender-mid">
-              {filteredDrivers.map((driver) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={4} className="px-8 py-12 text-center text-brand-muted">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+                    Loading drivers...
+                  </td>
+                </tr>
+              ) : filteredDrivers.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-8 py-12 text-center text-brand-muted italic">
+                    No drivers found.
+                  </td>
+                </tr>
+              ) : filteredDrivers.map((driver) => (
                 <tr key={driver.id} className={`transition-all ${driver.isWorkingToday ? 'bg-brand-violet/[0.02]' : 'hover:bg-brand-lavender/5'}`}>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
@@ -122,7 +270,7 @@ export default function DriversPage() {
                   </td>
                   <td className="px-8 py-6 text-center">
                     <button 
-                      onClick={() => setAsActiveDriver(driver.id)}
+                      onClick={() => handleToggleActive(driver.id)}
                       className="group relative inline-flex items-center justify-center transition-all"
                     >
                       {driver.isWorkingToday ? (
@@ -144,14 +292,25 @@ export default function DriversPage() {
                       <p className="font-body text-sm text-brand-text font-bold">{driver.phone}</p>
                     </div>
                   </td>
-                  <td className="px-8 py-6">
-                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                      driver.status === "active" 
-                        ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
-                        : "bg-zinc-100 text-zinc-500 border border-zinc-200"
-                    }`}>
-                      {driver.status}
-                    </span>
+                  <td className="px-8 py-6 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => openEditModal(driver)}
+                        className="text-brand-muted hover:text-brand-violet hover:bg-brand-lavender/50 rounded-xl"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDelete(driver.id, driver.name)}
+                        className="text-brand-muted hover:text-red-500 hover:bg-red-50 rounded-xl"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

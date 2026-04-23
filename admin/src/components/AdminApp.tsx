@@ -31,6 +31,7 @@ import Drivers        from "./pages/Drivers";
 import LandingPage    from "./pages/LandingPage";
 import LoginPage      from "./pages/LoginPage";
 import RegisterPage   from "./pages/RegisterPage";
+import DealsPage      from "./pages/Deals";
 
 // ── Spinner shown while auth state is loading from localStorage ────────────────
 function AuthLoadingScreen() {
@@ -93,6 +94,7 @@ function AppRoutes() {
           <Route path="/"         element={<DashboardPage />} />
           <Route path="/billing"  element={<Billing />} />
           <Route path="/menu"     element={<MenuManagement />} />
+          <Route path="/deals"    element={<DealsPage />} />
           <Route path="/orders"   element={<AdminOrders />} />
           <Route path="/drivers"  element={<Drivers />} />
           <Route path="/settings" element={<AdminSettings />} />
@@ -105,11 +107,16 @@ function AppRoutes() {
   );
 }
 
+import { Toaster } from "sonner";
+import GlobalNotification from "./GlobalNotification";
+
 export default function AdminApp() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <GlobalNotification />
         <AppRoutes />
+        <Toaster position="top-center" richColors />
       </BrowserRouter>
     </AuthProvider>
   );

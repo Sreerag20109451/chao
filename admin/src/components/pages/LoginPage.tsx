@@ -11,6 +11,8 @@ import { UtensilsCrossed, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff } from "l
 import { useAuth } from "@/lib/authContext";
 import { toast } from "sonner";
 
+import { validateEmail, validatePassword } from "@/lib/validators";
+
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -19,20 +21,34 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+
     if (!email || !password) {
       toast.error("Please fill in all fields.");
       return;
     }
+
+    if (!validateEmail(email)) {
+      setErrors(prev => ({ ...prev, email: "Invalid email address" }));
+      return;
+    }
+
+    const pwError = validatePassword(password);
+    if (pwError) {
+      setErrors(prev => ({ ...prev, password: pwError }));
+      return;
+    }
+
     setLoading(true);
     try {
       await login(email, password);
-      toast.success("Welcome back!");
       navigate("/");
-    } catch {
-      toast.error("Invalid credentials. Please try again.");
+    } catch (error: any) {
+      console.error("Login failed:", error);
     } finally {
       setLoading(false);
     }
@@ -88,6 +104,7 @@ export default function LoginPage() {
                   className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-[hsl(252_20%_40%)] rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-[hsl(250_78%_60%/0.5)] focus:border-[hsl(250_78%_60%/0.4)] transition-all"
                 />
               </div>
+              {errors.email && <p className="text-[11px] text-red-400 mt-1 font-body">{errors.email}</p>}
             </div>
 
             {/* Password */}
@@ -115,6 +132,7 @@ export default function LoginPage() {
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {errors.password && <p className="text-[11px] text-red-400 mt-1 font-body leading-tight">{errors.password}</p>}
             </div>
 
             {/* Submit */}

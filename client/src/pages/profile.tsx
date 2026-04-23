@@ -28,21 +28,38 @@ export default function ProfilePage() {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
 
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState(user?.phone || "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     if (user) {
-      setName(user.name);
-      setEmail(user.email);
-      setPhone(user.phone || "");
+      setName(prev => prev || user.name);
+      setEmail(prev => prev || user.email);
+      setPhone(prev => prev || user.phone || "");
     }
   }, [user]);
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     dispatch(updateProfile({ name, email, phone }));
+    
+    // Save to Firestore
+    if (user?.email) {
+      try {
+        const { auth, db } = await import("@/lib/firebase/config");
+        if (auth.currentUser) {
+          const { doc, updateDoc } = await import("firebase/firestore");
+          await updateDoc(doc(db, "users", auth.currentUser.uid), {
+            name,
+            phone
+          });
+        }
+      } catch (err) {
+        console.error("Failed to update profile in Firestore", err);
+      }
+    }
+
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };

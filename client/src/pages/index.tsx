@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import MenuCard from "@/components/MenuCard";
-import { menuItems } from "@/lib/menuData";
+import { MenuItem, Deal } from "@/lib/menuData";
+import { listenToMenu } from "@/lib/firebase/menu/service";
+import { listenToDeals } from "@/lib/firebase/deals/service";
 import { 
   ArrowRight, 
   Sparkles, 
@@ -21,10 +23,8 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
 import { setOrderType } from "@/lib/features/cartSlice";
+import { useStoreStatus } from "@/hooks/useStoreStatus";
 
-const featuredItems = menuItems
-  .filter((item) => item.tags.includes("chef-pick"))
-  .slice(0, 3);
 
 const features = [
   {
@@ -91,7 +91,39 @@ function ScrollReveal({ children, className = "", animation = "fade-up", style =
   );
 }
 
-function TodaysDeal() {
+function TodaysDeal({ deal }: { deal?: Deal }) {
+  const [timeLeft, setTimeLeft] = useState({ hours: "00", minutes: "00" });
+
+  useEffect(() => {
+    if (!deal) return;
+    
+    const updateTime = () => {
+      const end = new Date(deal.endDate);
+      end.setHours(23, 59, 59, 999);
+      const now = new Date();
+      const diff = end.getTime() - now.getTime();
+      
+      if (diff <= 0) {
+        setTimeLeft({ hours: "00", minutes: "00" });
+        return;
+      }
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      setTimeLeft({
+        hours: hours.toString().padStart(2, "0"),
+        minutes: minutes.toString().padStart(2, "0")
+      });
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    return () => clearInterval(interval);
+  }, [deal]);
+
+  if (!deal) return null;
+
   return (
     <div className="relative overflow-hidden bg-brand-violet rounded-[2.5rem] p-8 md:p-10 shadow-violet-glow group">
       <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700" />
@@ -103,10 +135,10 @@ function TodaysDeal() {
             <Sparkles className="w-3 h-3 text-brand-amber" /> Limited Time Offer
           </div>
           <h2 className="font-display font-bold text-white text-3xl md:text-4xl leading-tight">
-            Today's <span className="text-brand-amber">Special Deal</span>.
+            <span className="text-brand-amber">{deal.title}</span>.
           </h2>
           <p className="font-body text-brand-lavender/80 text-lg max-w-md">
-            Order any two Curry mains and get a complimentary <span className="text-white font-bold underline decoration-brand-amber underline-offset-4">Classic Pad Thai</span> on the house!
+            {deal.description}
           </p>
         </div>
         
@@ -115,12 +147,12 @@ function TodaysDeal() {
             <p className="text-brand-lavender text-xs uppercase font-display font-bold tracking-widest mb-1">Ends in</p>
             <div className="flex gap-4">
               <div className="text-center">
-                <span className="block text-2xl font-display font-bold text-white">04</span>
+                <span className="block text-2xl font-display font-bold text-white">{timeLeft.hours}</span>
                 <span className="text-[10px] text-brand-lavender/60 uppercase">Hrs</span>
               </div>
               <div className="text-brand-lavender/40 text-xl font-display">:</div>
               <div className="text-center">
-                <span className="block text-2xl font-display font-bold text-white">42</span>
+                <span className="block text-2xl font-display font-bold text-white">{timeLeft.minutes}</span>
                 <span className="text-[10px] text-brand-lavender/60 uppercase">Min</span>
               </div>
             </div>
@@ -137,6 +169,22 @@ function TodaysDeal() {
 function LoggedInHome({ user }: { user: any }) {
   const dispatch = useDispatch();
   const orderType = useSelector((state: RootState) => state.cart.orderType);
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
+
+  useEffect(() => {
+    const unsubscribeMenu = listenToMenu((data) => {
+      // Filter out unavailable items for recommendations
+      setItems(data.filter(item => item.available !== false));
+    });
+    const unsubscribeDeals = listenToDeals((data) => {
+      setDeals(data);
+    });
+    return () => {
+      unsubscribeMenu();
+      unsubscribeDeals();
+    };
+  }, []);
 
   const handleOrderTypeChange = (type: "delivery" | "collection") => {
     dispatch(setOrderType(type));
@@ -222,9 +270,11 @@ function LoggedInHome({ user }: { user: any }) {
           </aside>
 
           <main className="md:col-span-2 lg:col-span-3 space-y-10">
-            <ScrollReveal animation="fade-up">
-              <TodaysDeal />
-            </ScrollReveal>
+            {deals.length > 0 && (
+              <ScrollReveal animation="fade-up">
+                <TodaysDeal deal={deals[0]} />
+              </ScrollReveal>
+            )}
 
             <section>
               <div className="flex items-center justify-between mb-6 px-2">
@@ -232,13 +282,13 @@ function LoggedInHome({ user }: { user: any }) {
                 <Link href="/menu" className="text-brand-violet text-sm font-bold hover:underline">See all</Link>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {menuItems.slice(0, 4).map((item, i) => (
+                {items.slice(0, 4).map((item, i) => (
                   <ScrollReveal 
                     key={item.id} 
                     animation="fade-up"
                     style={{ transitionDelay: `${i * 100}ms` }}
                   >
-                    <MenuCard item={item} />
+                    <MenuCard item={item} deals={deals} />
                   </ScrollReveal>
                 ))}
               </div>
@@ -252,6 +302,17 @@ function LoggedInHome({ user }: { user: any }) {
 
 export default function Home() {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const { isOpen: isStoreOpen, isLoaded: isStatusLoaded } = useStoreStatus();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const unsubscribe = listenToDeals((data) => {
+        setDeals(data);
+      });
+      return () => unsubscribe();
+    }
+  }, [isAuthenticated]);
 
   if (isAuthenticated) {
     return <LoggedInHome user={user} />;
@@ -266,6 +327,12 @@ export default function Home() {
         </div>
 
         <div className="max-w-6xl mx-auto px-6 text-center relative z-10">
+          {!isStoreOpen && isStatusLoaded && (
+            <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl inline-block shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+              <p className="text-sm md:text-base font-display font-bold text-red-600">Store is currently closed.</p>
+              <p className="text-xs md:text-sm font-body text-red-500 mt-1">Please check back during our opening hours to place an order.</p>
+            </div>
+          )}
           <h1 className="font-display font-bold text-brand-text text-5xl sm:text-6xl md:text-7xl tracking-tight mb-6 animate-in fade-in slide-in-from-top-10 duration-1000">
             Waterford's Finest <span className="text-brand-violet">Authentic Thai</span>.
           </h1>
@@ -283,11 +350,13 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-24 max-w-6xl mx-auto px-6 relative z-10">
-        <ScrollReveal animation="fade-up">
-          <TodaysDeal />
-        </ScrollReveal>
-      </section>
+      {deals.length > 0 && (
+        <section className="py-24 max-w-6xl mx-auto px-6 relative z-10">
+          <ScrollReveal animation="fade-up">
+            <TodaysDeal deal={deals[0]} />
+          </ScrollReveal>
+        </section>
+      )}
 
       <section className="py-24 bg-white/40 border-y border-brand-lavender-mid relative z-10">
         <div className="max-w-6xl mx-auto px-6">

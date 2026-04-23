@@ -10,12 +10,15 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addAddress } from "@/lib/features/authSlice";
+import { RootState } from "@/lib/store";
+import { updateUserProfile } from "@/lib/firebase/auth/service";
 import { MapPin } from "lucide-react";
 
 export default function AddressModal({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [address, setAddress] = useState("");
   const [eircode, setEircode] = useState("");
   const [error, setError] = useState("");
@@ -28,7 +31,7 @@ export default function AddressModal({ children }: { children: React.ReactNode }
     return regex.test(cleanCode);
   };
 
-  const handleAddAddress = () => {
+  const handleAddAddress = async () => {
     setError("");
     if (!isValidWaterfordEircode(eircode)) {
       setError("We currently only deliver to Waterford (Eircodes starting with X91)");
@@ -39,6 +42,25 @@ export default function AddressModal({ children }: { children: React.ReactNode }
       // Combine address and eircode for the profile
       const fullAddress = `${address.trim()}, ${eircode.trim().toUpperCase()}`;
       dispatch(addAddress(fullAddress));
+      
+      // Update in Firestore
+      if (user?.email) {
+        // Since we don't store uid in Redux directly in a neat way, wait we can just lookup user by email or if uid is in user obj
+        // But user is fetched by auth state. The firebase uid is usually the doc ID in "users".
+        // Let's assume user.uid exists or we can just skip or add a way to get uid.
+        // Actually the easier way is to update the doc using `auth.currentUser.uid`
+        import("@/lib/firebase/config").then(async ({ auth, db }) => {
+          if (auth.currentUser) {
+            const { doc, updateDoc } = await import("firebase/firestore");
+            const userDocRef = doc(db, "users", auth.currentUser.uid);
+            await updateDoc(userDocRef, {
+              addresses: [...(user.addresses || []), fullAddress],
+              primaryAddressIndex: user.addresses?.length || 0
+            });
+          }
+        });
+      }
+
       setIsOpen(false);
       setAddress(""); // Reset for next time
       setEircode("");

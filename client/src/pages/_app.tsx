@@ -5,6 +5,8 @@ import { ReduxProvider } from "@/components/ReduxProvider";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Head from "next/head";
+import FirebaseAuthHandler from "@/components/FirebaseAuthHandler";
+import { Toaster } from "sonner";
 
 const baiJamjuree = Bai_Jamjuree({
   subsets: ["latin", "thai"],
@@ -27,6 +29,8 @@ const sarabun = Sarabun({
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <ReduxProvider>
+      <Toaster position="top-center" expand={true} richColors />
+      <FirebaseAuthHandler />
       <div className={`${baiJamjuree.variable} ${notoSerifThai.variable} ${sarabun.variable} min-h-screen flex flex-col antialiased bg-lavender-gradient`}>
         <Head>
           <title>Chao | Waterford's Finest Authentic Thai Restaurant & Takeaway</title>

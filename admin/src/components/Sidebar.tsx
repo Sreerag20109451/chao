@@ -10,7 +10,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import Image from "next/image";
-import { LayoutDashboard, Receipt, Utensils as MenuIcon, ShoppingBag, Settings, LogOut, UtensilsCrossed, Bike } from "lucide-react";
+import { LayoutDashboard, Receipt, Utensils as MenuIcon, ShoppingBag, Settings, LogOut, UtensilsCrossed, Bike, Tag } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
 // Admin is an SPA inside Next.js, we can use <img> for simplicity in the React Router context if needed, 
 // but Next.js /public is available.
@@ -19,13 +19,14 @@ const links = [
   { href: "/",         label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
   { href: "/billing",   label: "Billing/POS",icon: <Receipt className="w-5 h-5" /> },
   { href: "/menu",     label: "Menu Items", icon: <MenuIcon className="w-5 h-5" /> },
+  { href: "/deals",    label: "Deals",      icon: <Tag className="w-5 h-5" /> },
   { href: "/orders",   label: "Orders",     icon: <ShoppingBag className="w-5 h-5" /> },
   { href: "/drivers",  label: "Drivers",    icon: <Bike className="w-5 h-5" /> },
   { href: "/settings", label: "Settings",   icon: <Settings className="w-5 h-5" /> },
 ];
 
 export default function Sidebar() {
-  const { logout } = useAuth();
+  const { logout, user, userRole } = useAuth();
   const location = useLocation();
   const pathname = location.pathname;
 
@@ -80,6 +81,16 @@ export default function Sidebar() {
           <LogOut className="w-5 h-5" />
           Log out
         </button>
+        
+        <div className="px-3 py-3 bg-[hsl(240_12%_14%)] rounded-xl border border-[hsl(240_12%_18%)] space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[hsl(252_40%_50%)]">Status</span>
+            <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${userRole === 'admin' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-amber-500/20 text-amber-500'}`}>
+              {userRole || 'No Role'}
+            </span>
+          </div>
+          <p className="text-[9px] font-mono text-[hsl(252_20%_40%)] truncate">ID: {user?.uid.slice(0, 12)}...</p>
+        </div>
         
         <div className="px-3 py-2 text-[10px] font-display text-[hsl(252_40%_60%)] leading-tight">
           Developed by{" "}

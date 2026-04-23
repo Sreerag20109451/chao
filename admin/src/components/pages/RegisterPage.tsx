@@ -10,11 +10,13 @@ import Image from "next/image";
 import { UtensilsCrossed, User, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff, Check } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
 import { toast } from "sonner";
+import { validateEmail, validatePassword } from "@/lib/validators";
 
 const passwordRules = [
   { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
-  { label: "One uppercase letter",  test: (p: string) => /[A-Z]/.test(p) },
+  { label: "One letter",            test: (p: string) => /[a-zA-Z]/.test(p) },
   { label: "One number",            test: (p: string) => /\d/.test(p) },
+  { label: "One special character", test: (p: string) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
 ];
 
 export default function RegisterPage() {
@@ -27,31 +29,42 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const passwordValid = passwordRules.every(r => r.test(password));
+  const passwordValid = !validatePassword(password);
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+
     if (!name || !email || !password || !confirmPassword) {
       toast.error("Please fill in all fields.");
       return;
     }
-    if (!passwordValid) {
-      toast.error("Password does not meet the requirements.");
+
+    if (!validateEmail(email)) {
+      setErrors(prev => ({ ...prev, email: "Invalid email address" }));
       return;
     }
+
+    const pwError = validatePassword(password);
+    if (pwError) {
+      setErrors(prev => ({ ...prev, password: pwError }));
+      return;
+    }
+
     if (!passwordsMatch) {
-      toast.error("Passwords do not match.");
+      setErrors(prev => ({ ...prev, confirm: "Passwords do not match" }));
       return;
     }
+
     setLoading(true);
     try {
       await register(name, email, password);
-      toast.success("Account created — welcome to Chao Admin!");
       navigate("/");
-    } catch {
-      toast.error("Registration failed. Please try again.");
+    } catch (error: any) {
+      console.error("Registration failed:", error);
     } finally {
       setLoading(false);
     }
@@ -147,6 +160,7 @@ export default function RegisterPage() {
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {errors.password && <p className="text-[11px] text-red-400 mt-1 font-body leading-tight">{errors.password}</p>}
               {/* Password rules */}
               {password.length > 0 && (
                 <div className="grid grid-cols-1 gap-1 pt-1">
@@ -184,8 +198,8 @@ export default function RegisterPage() {
                   }`}
                 />
               </div>
-              {confirmPassword.length > 0 && !passwordsMatch && (
-                <p className="text-[11px] text-red-400 font-body">Passwords don't match</p>
+              {errors.confirm && (
+                <p className="text-[11px] text-red-400 mt-1 font-body">{errors.confirm}</p>
               )}
             </div>
 
