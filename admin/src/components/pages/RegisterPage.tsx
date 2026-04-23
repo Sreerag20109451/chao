@@ -1,0 +1,221 @@
+"use client";
+
+/**
+ * RegisterPage.tsx — Admin account creation form.
+ */
+
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Image from "next/image";
+import { UtensilsCrossed, User, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff, Check } from "lucide-react";
+import { useAuth } from "@/lib/authContext";
+import { toast } from "sonner";
+
+const passwordRules = [
+  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
+  { label: "One uppercase letter",  test: (p: string) => /[A-Z]/.test(p) },
+  { label: "One number",            test: (p: string) => /\d/.test(p) },
+];
+
+export default function RegisterPage() {
+  const { register } = useAuth();
+  const navigate = useNavigate();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const passwordValid = passwordRules.every(r => r.test(password));
+  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !password || !confirmPassword) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+    if (!passwordValid) {
+      toast.error("Password does not meet the requirements.");
+      return;
+    }
+    if (!passwordsMatch) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await register(name, email, password);
+      toast.success("Account created — welcome to Chao Admin!");
+      navigate("/");
+    } catch {
+      toast.error("Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[hsl(240_15%_7%)] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background blobs */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-[hsl(250_78%_60%/0.16)] blur-[100px]" />
+        <div className="absolute bottom-0 -left-32 w-[400px] h-[400px] rounded-full bg-[hsl(280_78%_60%/0.10)] blur-[100px]" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm p-1 group-hover:scale-105 transition-transform">
+              <Image 
+                src="/logo.png" 
+                alt="Chao Logo" 
+                width={28} 
+                height={28} 
+                className="object-contain"
+              />
+            </div>
+            <span className="font-display font-bold text-xl text-white tracking-wide">Chao Admin</span>
+          </Link>
+        </div>
+
+        {/* Card */}
+        <div className="bg-white/[0.05] border border-white/[0.10] rounded-3xl p-8 backdrop-blur-sm">
+          <div className="mb-8 text-center">
+            <h1 className="font-display font-bold text-2xl text-white mb-2">Create your account</h1>
+            <p className="text-sm text-[hsl(252_20%_60%)] font-body">Get access to the Chao Admin dashboard</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name */}
+            <div className="space-y-2">
+              <label className="block text-xs font-display font-bold text-[hsl(252_30%_70%)] uppercase tracking-wider">Full name</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(252_20%_50%)]" />
+                <input
+                  id="register-name"
+                  type="text"
+                  autoComplete="name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="Your name"
+                  className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-[hsl(252_20%_40%)] rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-[hsl(250_78%_60%/0.5)] focus:border-[hsl(250_78%_60%/0.4)] transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <label className="block text-xs font-display font-bold text-[hsl(252_30%_70%)] uppercase tracking-wider">Email address</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(252_20%_50%)]" />
+                <input
+                  id="register-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="admin@chaothai.co"
+                  className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-[hsl(252_20%_40%)] rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-[hsl(250_78%_60%/0.5)] focus:border-[hsl(250_78%_60%/0.4)] transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <label className="block text-xs font-display font-bold text-[hsl(252_30%_70%)] uppercase tracking-wider">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(252_20%_50%)]" />
+                <input
+                  id="register-password"
+                  type={showPw ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-[hsl(252_20%_40%)] rounded-xl pl-11 pr-11 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-[hsl(250_78%_60%/0.5)] focus:border-[hsl(250_78%_60%/0.4)] transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(p => !p)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[hsl(252_20%_45%)] hover:text-white transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {/* Password rules */}
+              {password.length > 0 && (
+                <div className="grid grid-cols-1 gap-1 pt-1">
+                  {passwordRules.map(r => {
+                    const ok = r.test(password);
+                    return (
+                      <div key={r.label} className={`flex items-center gap-2 text-[11px] font-body transition-colors ${ok ? "text-emerald-400" : "text-[hsl(252_20%_45%)]"}`}>
+                        <Check className={`w-3 h-3 shrink-0 ${ok ? "opacity-100" : "opacity-30"}`} />
+                        {r.label}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-2">
+              <label className="block text-xs font-display font-bold text-[hsl(252_30%_70%)] uppercase tracking-wider">Confirm password</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(252_20%_50%)]" />
+                <input
+                  id="register-confirm-password"
+                  type={showPw ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={`w-full bg-white/[0.06] border text-white placeholder-[hsl(252_20%_40%)] rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 transition-all ${
+                    confirmPassword.length > 0
+                      ? passwordsMatch
+                        ? "border-emerald-500/40 focus:ring-emerald-500/30"
+                        : "border-red-500/40 focus:ring-red-500/30"
+                      : "border-white/[0.12] focus:ring-[hsl(250_78%_60%/0.5)]"
+                  }`}
+                />
+              </div>
+              {confirmPassword.length > 0 && !passwordsMatch && (
+                <p className="text-[11px] text-red-400 font-body">Passwords don't match</p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <button
+              id="register-submit"
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 flex items-center justify-center gap-2 bg-[hsl(250_78%_60%)] text-white font-display font-bold text-sm py-3.5 rounded-xl shadow-violet-glow hover:bg-[hsl(250_78%_50%)] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>Create account <ArrowRight className="w-4 h-4" /></>
+              )}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-[hsl(252_20%_50%)] font-body">
+            Already have an account?{" "}
+            <Link to="/login" className="text-[hsl(250_78%_70%)] font-bold hover:text-[hsl(250_78%_80%)] transition-colors">
+              Sign in
+            </Link>
+          </p>
+        </div>
+
+        <p className="mt-6 text-center text-xs text-[hsl(252_20%_35%)] font-body">
+          Chao Admin · Restaurant Management System
+        </p>
+      </div>
+    </div>
+  );
+}

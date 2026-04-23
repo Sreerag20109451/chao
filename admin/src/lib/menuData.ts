@@ -28,8 +28,8 @@ export const categories = [
   { id: "drinks",    label: "Drinks" },
 ];
 
-const PROTEIN_LIST = ["Chicken", "Beef", "Prawns", "Crispy Pork", "Tofu", "Vegetables"];
-const SIDE_LIST = ["Jasmine Rice", "Egg Fried Rice", "Brown Rice", "Chips", "Rice Noodles"];
+export const PROTEIN_LIST = ["Chicken", "Beef", "Prawns", "Crispy Pork", "Tofu", "Vegetables"];
+export const SIDE_LIST = ["Jasmine Rice", "Egg Fried Rice", "Brown Rice", "Chips", "Rice Noodles"];
 
 export const initialMenuItems: MenuItem[] = [
   // Starters

@@ -9,16 +9,23 @@
  */
 
 import { Link, useLocation } from "react-router-dom";
-import { UtensilsCrossed, LayoutDashboard, Menu as MenuIcon, ShoppingBag, Settings, LogOut } from "lucide-react";
+import Image from "next/image";
+import { LayoutDashboard, Receipt, Utensils as MenuIcon, ShoppingBag, Settings, LogOut, UtensilsCrossed, Bike } from "lucide-react";
+import { useAuth } from "@/lib/authContext";
+// Admin is an SPA inside Next.js, we can use <img> for simplicity in the React Router context if needed, 
+// but Next.js /public is available.
 
 const links = [
   { href: "/",         label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
+  { href: "/billing",   label: "Billing/POS",icon: <Receipt className="w-5 h-5" /> },
   { href: "/menu",     label: "Menu Items", icon: <MenuIcon className="w-5 h-5" /> },
   { href: "/orders",   label: "Orders",     icon: <ShoppingBag className="w-5 h-5" /> },
+  { href: "/drivers",  label: "Drivers",    icon: <Bike className="w-5 h-5" /> },
   { href: "/settings", label: "Settings",   icon: <Settings className="w-5 h-5" /> },
 ];
 
 export default function Sidebar() {
+  const { logout } = useAuth();
   const location = useLocation();
   const pathname = location.pathname;
 
@@ -26,12 +33,20 @@ export default function Sidebar() {
     <aside className="w-64 bg-[hsl(240_15%_8%)] text-[hsl(252_40%_88%)] h-screen sticky top-0 flex flex-col border-r border-[hsl(240_12%_16%)]">
       {/* Brand Header */}
       <div className="h-16 flex items-center px-6 border-b border-[hsl(240_12%_16%)]">
-        <div className="flex items-center gap-2">
-          <UtensilsCrossed className="w-5 h-5 text-[hsl(250_78%_60%)]" strokeWidth={2.5} />
+        <Link to="/" className="flex items-center gap-3 transition-transform hover:scale-[1.02] active:scale-95">
+          <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white shadow-sm border border-[hsl(240_12%_16%)] flex items-center justify-center p-1">
+            <Image 
+              src="/logo.png" 
+              alt="Chao Logo" 
+              width={24} 
+              height={24} 
+              className="object-contain"
+            />
+          </div>
           <span className="font-display font-bold text-xl text-white tracking-wide">
             Chao Admin
           </span>
-        </div>
+        </Link>
       </div>
 
       {/* Navigation */}
@@ -58,7 +73,10 @@ export default function Sidebar() {
 
       {/* Footer / User */}
       <div className="p-4 border-t border-[hsl(240_12%_16%)] space-y-4">
-        <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-display font-medium text-sm text-[hsl(252_40%_88%)] hover:bg-[hsl(0_72%_51%)/0.1] hover:text-[hsl(0_72%_51%)] transition-colors w-full">
+        <button 
+          onClick={logout}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-display font-medium text-sm text-[hsl(252_40%_88%)] hover:bg-[hsl(0_72%_51%)/0.1] hover:text-[hsl(0_72%_51%)] transition-colors w-full"
+        >
           <LogOut className="w-5 h-5" />
           Log out
         </button>
