@@ -7,10 +7,12 @@ export interface CartItem extends MenuItem {
 
 interface CartState {
   items: CartItem[];
+  orderType: "delivery" | "collection";
 }
 
 const initialState: CartState = {
   items: [],
+  orderType: "delivery",
 };
 
 const cartSlice = createSlice({
@@ -43,8 +45,11 @@ const cartSlice = createSlice({
     clearCart: (state) => {
       state.items = [];
     },
+    setOrderType: (state, action: PayloadAction<"delivery" | "collection">) => {
+      state.orderType = action.payload;
+    },
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart } = cartSlice.actions;
+export const { addToCart, removeFromCart, updateQuantity, clearCart, setOrderType } = cartSlice.actions;
 export default cartSlice.reducer;

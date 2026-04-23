@@ -19,8 +19,9 @@ import {
   Bike,
   Store
 } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
+import { setOrderType } from "@/lib/features/cartSlice";
 
 /* Pull only chef's-pick items for the homepage preview */
 const featuredItems = menuItems
@@ -97,7 +98,12 @@ function ScrollReveal({ children, className = "", animation = "fade-up", style =
 }
 
 function LoggedInHome({ user }: { user: any }) {
-  const [orderType, setOrderType] = useState<"delivery" | "collection">("delivery");
+  const dispatch = useDispatch();
+  const orderType = useSelector((state: RootState) => state.cart.orderType);
+
+  const handleOrderTypeChange = (type: "delivery" | "collection") => {
+    dispatch(setOrderType(type));
+  };
 
   return (
     <div className="min-h-screen bg-lavender-gradient pt-28 pb-20">
@@ -117,7 +123,7 @@ function LoggedInHome({ user }: { user: any }) {
             {/* Delivery/Collection Toggle */}
             <div className="inline-flex p-1 bg-white border border-brand-lavender-mid rounded-2xl shadow-sm">
               <button 
-                onClick={() => setOrderType("delivery")}
+                onClick={() => handleOrderTypeChange("delivery")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-display font-bold transition-all ${
                   orderType === "delivery" 
                     ? "bg-brand-violet text-white shadow-violet-glow" 
@@ -128,7 +134,7 @@ function LoggedInHome({ user }: { user: any }) {
                 Delivery
               </button>
               <button 
-                onClick={() => setOrderType("collection")}
+                onClick={() => handleOrderTypeChange("collection")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-display font-bold transition-all ${
                   orderType === "collection" 
                     ? "bg-brand-violet text-white shadow-violet-glow" 

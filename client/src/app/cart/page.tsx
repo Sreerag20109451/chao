@@ -1,13 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
 import { 
   removeFromCart, 
   updateQuantity, 
-  clearCart 
+  clearCart,
+  setOrderType
 } from "@/lib/features/cartSlice";
 import { 
   ShoppingBag, 
@@ -15,20 +16,38 @@ import {
   Plus, 
   Minus, 
   ArrowRight, 
-  ArrowLeft,
-  ChevronLeft
+  ArrowLeft, 
+  ChevronLeft,
+  Bike,
+  Store,
+  MapPin,
+  Pencil,
+  Phone
 } from "lucide-react";
+import AddressModal from "@/components/AddressModal";
+import { updateProfile, setPrimaryAddress } from "@/lib/features/authSlice";
 
 export default function CartPage() {
-  const { items } = useSelector((state: RootState) => state.cart);
+  const { items, orderType } = useSelector((state: RootState) => state.cart);
+  const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+
+  const [phone, setPhone] = useState(user?.phone || "");
 
   const subtotal = items.reduce(
     (acc, item) => acc + item.price * item.quantity, 
     0
   );
-  const deliveryFee = subtotal > 30 ? 0 : 3.5;
-  const total = subtotal + deliveryFee;
+  const serviceCharge = subtotal * 0.05;
+  const deliveryFee = orderType === "collection" ? 0 : (subtotal > 30 ? 0 : 3.5);
+  const total = subtotal + serviceCharge + deliveryFee;
+
+  const currentAddress = user?.addresses[user?.primaryAddressIndex || 0];
+  const isCheckoutDisabled = orderType === "delivery" && (!currentAddress || !phone.trim());
+
+  useEffect(() => {
+    if (user?.phone && !phone) setPhone(user.phone);
+  }, [user?.phone, phone]);
 
   if (items.length === 0) {
     return (
@@ -71,8 +90,74 @@ export default function CartPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
           
-          {/* ---- Left: Cart Items ---- */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* ---- Left: Address & Items ---- */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Delivery Address & Contact Section */}
+            {orderType === "delivery" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                {/* Contact Number Card */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
+                      <Phone className="w-6 h-6 text-brand-violet" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-display font-bold text-brand-text text-lg mb-2">Contact Number</h3>
+                      <input 
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        onBlur={() => dispatch(updateProfile({ phone }))}
+                        placeholder="Required for delivery..."
+                        className="w-full bg-white border border-brand-lavender-mid rounded-xl px-4 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/20"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Address Card */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
+                      <MapPin className="w-6 h-6 text-brand-violet" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-display font-bold text-brand-text text-lg mb-1">Delivery Address</h3>
+                      {user?.addresses && user.addresses.length > 0 ? (
+                        <div className="space-y-3 mt-3">
+                          {user.addresses.map((addr, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => dispatch(setPrimaryAddress(idx))}
+                              className={`w-full text-left p-3 rounded-xl border transition-all text-sm ${
+                                idx === user.primaryAddressIndex 
+                                  ? "bg-brand-violet/5 border-brand-violet font-semibold text-brand-text" 
+                                  : "bg-white border-brand-lavender-mid text-brand-muted hover:border-brand-violet/30"
+                              }`}
+                            >
+                              {addr}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="font-body text-brand-muted text-sm max-w-sm">
+                          No delivery address added yet.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <AddressModal>
+                    <button type="button" className="flex items-center gap-2 bg-white border border-brand-lavender-mid hover:border-brand-violet hover:bg-brand-violet/5 text-brand-text font-display font-bold text-sm px-5 py-3 rounded-xl transition-all shadow-sm shrink-0 self-start md:self-center">
+                      <Plus className="w-4 h-4 text-brand-violet" />
+                      Add New
+                    </button>
+                  </AddressModal>
+                </div>
+              </div>
+            )}
+
             <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 shadow-sm overflow-hidden">
               <ul className="divide-y divide-brand-lavender-mid">
                 {items.map((item) => (
@@ -146,10 +231,40 @@ export default function CartPage() {
             <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-white/50 shadow-xl p-8 sticky top-32">
               <h2 className="font-display font-bold text-xl text-brand-text mb-6">Summary</h2>
               
+              {/* Order Type Toggle */}
+              <div className="flex p-1 bg-brand-lavender/30 rounded-2xl mb-8">
+                <button 
+                  onClick={() => dispatch(setOrderType("delivery"))}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-display font-bold transition-all ${
+                    orderType === "delivery" 
+                      ? "bg-brand-violet text-white shadow-violet-glow" 
+                      : "text-brand-muted hover:text-brand-violet"
+                  }`}
+                >
+                  <Bike className="w-4 h-4" />
+                  Delivery
+                </button>
+                <button 
+                  onClick={() => dispatch(setOrderType("collection"))}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-display font-bold transition-all ${
+                    orderType === "collection" 
+                      ? "bg-brand-violet text-white shadow-violet-glow" 
+                      : "text-brand-muted hover:text-brand-violet"
+                  }`}
+                >
+                  <Store className="w-4 h-4" />
+                  Collection
+                </button>
+              </div>
+
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between text-brand-muted font-body">
                   <span>Subtotal</span>
                   <span className="font-semibold text-brand-text">£{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-brand-muted font-body">
+                  <span>Service Charge (5%)</span>
+                  <span className="font-semibold text-brand-text">£{serviceCharge.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-brand-muted font-body">
                   <span>Delivery Fee</span>
@@ -168,7 +283,10 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <button className="w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-2xl py-5 flex items-center justify-center gap-3 shadow-violet-glow transition-all active:scale-[0.98]">
+              <button 
+                disabled={isCheckoutDisabled}
+                className="w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-2xl py-5 flex items-center justify-center gap-3 shadow-violet-glow transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+              >
                 Checkout Now
                 <ArrowRight className="w-5 h-5" />
               </button>

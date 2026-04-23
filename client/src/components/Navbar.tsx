@@ -109,18 +109,21 @@ export default function Navbar() {
 
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
-                  scrolled 
-                    ? "bg-white/5 border-white/10 text-white" 
-                    : "bg-brand-lavender border-brand-lavender-mid text-brand-text"
-                }`}>
+                <Link
+                  href="/profile"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all hover:shadow-md active:scale-95 ${
+                    scrolled 
+                      ? "bg-white/5 border-white/10 text-white hover:bg-white/10" 
+                      : "bg-brand-lavender border-brand-lavender-mid text-brand-text hover:bg-brand-lavender-mid"
+                  }`}
+                >
                   <div className="w-6 h-6 rounded-full bg-brand-violet/20 flex items-center justify-center">
                     <User className="w-3.5 h-3.5 text-brand-violet" />
                   </div>
                   <span className="font-display text-sm font-medium">
                     Welcome, <span className="font-bold">{user?.name.split(' ')[0]}</span>
                   </span>
-                </div>
+                </Link>
                 <button 
                   onClick={handleLogout}
                   className={`p-2 rounded-full border transition-all hover:bg-red-50 hover:text-red-600 hover:border-red-200 ${
@@ -206,17 +209,21 @@ export default function Navbar() {
 
               {isAuthenticated ? (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-brand-violet/5 border border-brand-violet/10">
+                  <Link 
+                    href="/profile"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-brand-violet/5 border border-brand-violet/10 hover:bg-brand-violet/10 transition-all active:scale-95"
+                  >
                     <div className="w-10 h-10 rounded-full bg-brand-violet/20 flex items-center justify-center">
                       <User className="w-5 h-5 text-brand-violet" />
                     </div>
                     <div>
-                      <p className="font-display text-xs font-bold text-brand-violet uppercase tracking-wider">Account</p>
+                      <p className="font-display text-xs font-bold text-brand-violet uppercase tracking-wider">Account Settings</p>
                       <p className="font-display text-lg font-bold text-brand-text leading-none mt-1">
                         {user?.name}
                       </p>
                     </div>
-                  </div>
+                  </Link>
                   <button 
                     onClick={handleLogout}
                     className="flex items-center justify-center gap-3 w-full p-4 rounded-2xl bg-red-50 text-red-600 font-display font-bold hover:bg-red-100 transition-colors"
