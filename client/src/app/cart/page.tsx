@@ -16,12 +16,10 @@ import {
   Plus, 
   Minus, 
   ArrowRight, 
-  ArrowLeft, 
   ChevronLeft,
   Bike,
   Store,
   MapPin,
-  Pencil,
   Phone
 } from "lucide-react";
 import AddressModal from "@/components/AddressModal";
@@ -51,14 +49,14 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-lavender-gradient pt-32 pb-20 flex items-center justify-center">
+      <div className="min-h-screen pt-32 pb-20 flex items-center justify-center">
         <div className="max-w-md w-full px-6 text-center space-y-6">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm">
             <ShoppingBag className="w-10 h-10 text-brand-lavender-mid" />
           </div>
           <h1 className="font-display font-bold text-brand-text text-3xl">Your cart is empty</h1>
           <p className="font-body text-brand-muted">
-            Looks like you haven&apos;t added any Thai delicacies to your cart yet.
+            Looks like you haven't added any Thai delicacies to your cart yet.
           </p>
           <Link 
             href="/menu"
@@ -72,9 +70,8 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-lavender-gradient pt-32 pb-20">
+    <div className="min-h-screen pt-32 pb-20">
       <div className="max-w-6xl mx-auto px-6">
-        
         <header className="mb-10">
           <Link 
             href="/menu" 
@@ -89,14 +86,9 @@ export default function CartPage() {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-          
-          {/* ---- Left: Address & Items ---- */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* Delivery Address & Contact Section */}
             {orderType === "delivery" && (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                {/* Contact Number Card */}
                 <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 shadow-sm">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
@@ -116,7 +108,6 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* Address Card */}
                 <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
                   <div className="flex items-start gap-4 flex-1">
                     <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
@@ -162,12 +153,9 @@ export default function CartPage() {
               <ul className="divide-y divide-brand-lavender-mid">
                 {items.map((item) => (
                   <li key={item.id} className="p-6 flex flex-col sm:flex-row sm:items-center gap-6 group">
-                    {/* Item Emoji */}
                     <div className="w-20 h-20 bg-lavender-gradient rounded-2xl flex items-center justify-center text-4xl shadow-inner shrink-0 group-hover:scale-105 transition-transform">
                       {item.emoji}
                     </div>
-
-                    {/* Item Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -182,8 +170,6 @@ export default function CartPage() {
                           £{(item.price * item.quantity).toFixed(2)}
                         </span>
                       </div>
-
-                      {/* Controls */}
                       <div className="mt-4 flex items-center justify-between">
                         <div className="flex items-center gap-1 bg-white border border-brand-lavender-mid rounded-xl p-1 shadow-sm">
                           <button 
@@ -202,7 +188,6 @@ export default function CartPage() {
                             <Plus className="w-3.5 h-3.5" />
                           </button>
                         </div>
-
                         <button 
                           onClick={() => dispatch(removeFromCart(item.id))}
                           className="flex items-center gap-1.5 text-red-500 hover:text-red-600 font-display font-bold text-xs uppercase tracking-wider transition-colors"
@@ -215,23 +200,12 @@ export default function CartPage() {
                   </li>
                 ))}
               </ul>
-              <div className="p-4 bg-brand-lavender/30 border-t border-brand-lavender-mid flex justify-end">
-                <button 
-                  onClick={() => dispatch(clearCart())}
-                  className="text-brand-muted hover:text-brand-violet font-display font-bold text-xs uppercase tracking-widest px-4 py-2"
-                >
-                  Clear all items
-                </button>
-              </div>
             </div>
           </div>
 
-          {/* ---- Right: Summary ---- */}
           <aside className="lg:col-span-1">
             <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-white/50 shadow-xl p-8 sticky top-32">
               <h2 className="font-display font-bold text-xl text-brand-text mb-6">Summary</h2>
-              
-              {/* Order Type Toggle */}
               <div className="flex p-1 bg-brand-lavender/30 rounded-2xl mb-8">
                 <button 
                   onClick={() => dispatch(setOrderType("delivery"))}
@@ -272,11 +246,6 @@ export default function CartPage() {
                     {deliveryFee === 0 ? "FREE" : `£${deliveryFee.toFixed(2)}`}
                   </span>
                 </div>
-                {deliveryFee > 0 && (
-                  <p className="text-[10px] text-brand-violet font-display font-bold bg-brand-violet/5 p-2 rounded-lg text-center">
-                    FREE delivery on orders over £30
-                  </p>
-                )}
                 <div className="pt-4 border-t border-brand-lavender-mid flex justify-between items-end">
                   <span className="font-display font-bold text-brand-text">Total</span>
                   <span className="font-display font-bold text-3xl text-brand-violet">£{total.toFixed(2)}</span>
@@ -285,21 +254,13 @@ export default function CartPage() {
 
               <button 
                 disabled={isCheckoutDisabled}
-                className="w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-2xl py-5 flex items-center justify-center gap-3 shadow-violet-glow transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                className="w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-2xl py-5 flex items-center justify-center gap-3 shadow-violet-glow transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Checkout Now
                 <ArrowRight className="w-5 h-5" />
               </button>
-
-              <div className="mt-6 flex items-center justify-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-display font-bold text-brand-muted uppercase tracking-widest">
-                  Secure Checkout
-                </span>
-              </div>
             </div>
           </aside>
-
         </div>
       </div>
     </div>

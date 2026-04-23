@@ -2,9 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useDispatch } from "react-redux";
-import { setCredentials } from "@/lib/features/authSlice";
 import { UtensilsCrossed, Eye, EyeOff, ArrowLeft, UserPlus, Lock, Mail, User } from "lucide-react";
 
 /**
@@ -38,7 +35,7 @@ function ScrollReveal({ children, className = "", animation = "fade-up", style =
 
   const getAnimationClass = () => {
     if (!isVisible) return "opacity-0 translate-y-8";
-    
+
     switch (animation) {
       case "fade-up": return "opacity-100 translate-y-0";
       case "scale-in": return "opacity-100 scale-100";
@@ -58,8 +55,6 @@ function ScrollReveal({ children, className = "", animation = "fade-up", style =
 }
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -71,16 +66,8 @@ export default function RegisterPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate successful registration
-    setTimeout(() => {
-      dispatch(setCredentials({ 
-        name: formData.name, 
-        email: formData.email 
-      }));
-      setIsSubmitting(false);
-      router.push("/");
-    }, 1500);
+    console.log("Register attempt with:", formData);
+    setTimeout(() => setIsSubmitting(false), 1500);
   };
 
   const handleGoogleSignup = () => {
@@ -90,8 +77,10 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-lavender-gradient pt-32 pb-20 overflow-hidden relative">
 
+
+
       <div className="max-w-xl mx-auto px-6 relative z-10">
-        
+
         {/* ---- Header Section (Matching Contact Page) ---- */}
         <header className="text-center mb-16 animate-in fade-in slide-in-from-top-10 duration-1000">
           <div className="pill-badge mx-auto mb-6 w-fit uppercase tracking-[0.1em]">

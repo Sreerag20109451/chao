@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Bai_Jamjuree, Noto_Serif_Thai, Sarabun } from "next/font/google";
 import "./globals.css";
+import { ReduxProvider } from "@/components/ReduxProvider";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { ReduxProvider } from "@/components/ReduxProvider";
 
 const baiJamjuree = Bai_Jamjuree({
   subsets: ["latin", "thai"],
@@ -35,16 +35,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${baiJamjuree.variable} ${notoSerifThai.variable} ${sarabun.variable}`}>
-      <body className="min-h-screen flex flex-col antialiased bg-lavender-gradient">
+      <body className="antialiased bg-lavender-gradient">
         <ReduxProvider>
-          {/* Persistent top navigation */}
-          <Navbar />
-
-          {/* Page content — each page decides its own section layout */}
-          <main className="flex-1">{children}</main>
-
-          {/* Persistent footer */}
-          <Footer />
+          <div className="min-h-screen flex flex-col antialiased bg-lavender-gradient">
+            <Navbar />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+          </div>
         </ReduxProvider>
       </body>
     </html>

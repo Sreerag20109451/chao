@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, X, UtensilsCrossed, ShoppingCart, User, LogOut } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
 import { logout } from "@/lib/features/authSlice";
-import { useRouter } from "next/navigation";
 
 const navLinks = [
   { href: "/menu",    label: "Menu" },
@@ -33,14 +32,11 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Use a more aggressive threshold and check multiple properties
       const scrollPos = window.pageYOffset || document.documentElement.scrollTop || window.scrollY || 0;
       setScrolled(scrollPos > 20);
     };
 
-    // Initialize state
     handleScroll();
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);

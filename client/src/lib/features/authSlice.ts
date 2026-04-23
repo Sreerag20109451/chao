@@ -1,11 +1,29 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+export interface Order {
+  id: string;
+  date: string;
+  total: number;
+  status: "delivered" | "processing" | "cancelled";
+  items: { name: string; quantity: number; price: number }[];
+  orderType: "delivery" | "collection";
+}
+
+export interface PaymentMethod {
+  id: string;
+  type: "visa" | "mastercard" | "apple-pay" | "cash";
+  last4?: string;
+  isPrimary: boolean;
+}
+
 export interface User {
   name: string;
   email: string;
   phone?: string;
   addresses: string[];
   primaryAddressIndex: number;
+  orders: Order[];
+  paymentMethods: PaymentMethod[];
 }
 
 interface AuthState {
@@ -14,14 +32,8 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: {
-    name: "Sreerag Sathian",
-    email: "sreerag@example.com",
-    phone: "",
-    addresses: [],
-    primaryAddressIndex: 0,
-  },
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
 };
 
 const authSlice = createSlice({
@@ -32,7 +44,13 @@ const authSlice = createSlice({
       state,
       action: PayloadAction<{ name: string; email: string }>
     ) => {
-      state.user = action.payload;
+      state.user = {
+        ...action.payload,
+        addresses: [],
+        primaryAddressIndex: 0,
+        orders: [],
+        paymentMethods: []
+      };
       state.isAuthenticated = true;
     },
     logout: (state) => {
