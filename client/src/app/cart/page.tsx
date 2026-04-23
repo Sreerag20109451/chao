@@ -32,7 +32,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-lavender-gradient pt-32 pb-20 flex flex-center items-center justify-center">
+      <div className="min-h-screen bg-lavender-gradient pt-32 pb-20 flex items-center justify-center">
         <div className="max-w-md w-full px-6 text-center space-y-6">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm">
             <ShoppingBag className="w-10 h-10 text-brand-lavender-mid" />
