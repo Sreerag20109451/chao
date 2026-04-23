@@ -1,8 +1,6 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Image from "next/image";
 import { Menu, X, ShoppingCart, User, LogOut } from "lucide-react";
@@ -16,8 +14,8 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const pathname = usePathname();
   const router = useRouter();
+  const pathname = router.pathname;
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const cartItems = useSelector((state: RootState) => state.cart.items);
@@ -146,8 +144,11 @@ export default function Navbar() {
               pathname !== "/login" && pathname !== "/register" && (
                 <Link
                   href="/login"
-                  className="inline-flex items-center justify-center bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-semibold rounded-full px-6 py-2 text-sm shadow-violet-glow transition-all duration-200"
+                  className="inline-flex items-center justify-center gap-2 bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-semibold rounded-full px-5 py-2 text-sm shadow-violet-glow transition-all duration-200 group"
                 >
+                  <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center overflow-hidden p-0.5 group-hover:scale-110 transition-transform">
+                    <Image src="/logo.png" alt="" width={16} height={16} className="object-contain" />
+                  </div>
                   Login
                 </Link>
               )
@@ -249,9 +250,12 @@ export default function Navbar() {
                     <Link
                       href="/login"
                       onClick={() => setMobileOpen(false)}
-                      className="inline-flex items-center justify-center w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-semibold rounded-full py-3 shadow-violet-glow"
+                      className="inline-flex items-center justify-center gap-3 w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-semibold rounded-full py-4 shadow-violet-glow group"
                     >
-                      Login
+                      <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden p-1 group-active:scale-95 transition-transform">
+                        <Image src="/logo.png" alt="" width={20} height={20} className="object-contain" />
+                      </div>
+                      Login to Your Account
                     </Link>
                   </div>
                 )

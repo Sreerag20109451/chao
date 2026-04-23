@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSelector, useDispatch } from "react-redux";
@@ -52,7 +50,7 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-lavender-gradient pt-32 pb-20">
+    <div className="min-h-screen pt-32 pb-20">
       <div className="max-w-4xl mx-auto px-6">
         <header className="mb-10 text-center">
           <h1 className="font-display font-bold text-brand-text text-4xl md:text-5xl tracking-tight mb-4">

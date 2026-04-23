@@ -1,24 +1,11 @@
-"use client";
-
-/**
- * MenuCard.tsx — Chao Thai Restaurant
- *
- * Individual dish card rendered in the menu grid.
- *
- * Typography breakdown:
- *  - Dish name     : Bai Jamjuree SemiBold (font-display)
- *  - Description   : Sarabun Regular (font-body)
- *  - Price         : Bai Jamjuree Bold in amber
- *  - Tag badges    : Bai Jamjuree 500
- */
-
 import { Badge } from "@/components/ui/badge";
 import type { MenuItem, MenuTag } from "@/lib/menuData";
 import { Flame, Leaf, ChefHat, WheatOff, Plus } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { addToCart } from "@/lib/features/cartSlice";
+import CustomizeModal from "./CustomizeModal";
 
 /* ---- Tag display config ---- */
 const tagConfig: Record<
@@ -62,12 +49,16 @@ export default function MenuCard({ item }: MenuCardProps) {
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
+  const hasOptions = !!(item.proteinOptions?.length || item.sideOptions?.length);
+
   const handleAddToCart = () => {
     if (!isAuthenticated) {
       router.push("/login");
       return;
     }
-    dispatch(addToCart(item));
+    if (!hasOptions) {
+      dispatch(addToCart(item));
+    }
   };
 
   return (
@@ -117,13 +108,24 @@ export default function MenuCard({ item }: MenuCardProps) {
             £{item.price.toFixed(2)}
           </span>
           
-          <button
-            onClick={handleAddToCart}
-            className="flex items-center justify-center bg-brand-violet hover:bg-brand-violet-dark text-white p-2 rounded-full shadow-sm transition-all duration-200 hover:scale-110 active:scale-95"
-            aria-label={`Add ${item.name} to cart`}
-          >
-            <Plus className="w-4 h-4" strokeWidth={3} />
-          </button>
+          {hasOptions ? (
+            <CustomizeModal item={item}>
+              <button
+                className="flex items-center justify-center bg-brand-violet hover:bg-brand-violet-dark text-white p-2 rounded-full shadow-sm transition-all duration-200 hover:scale-110 active:scale-95"
+                aria-label={`Customize ${item.name}`}
+              >
+                <Plus className="w-4 h-4" strokeWidth={3} />
+              </button>
+            </CustomizeModal>
+          ) : (
+            <button
+              onClick={handleAddToCart}
+              className="flex items-center justify-center bg-brand-violet hover:bg-brand-violet-dark text-white p-2 rounded-full shadow-sm transition-all duration-200 hover:scale-110 active:scale-95"
+              aria-label={`Add ${item.name} to cart`}
+            >
+              <Plus className="w-4 h-4" strokeWidth={3} />
+            </button>
+          )}
         </div>
       </div>
     </article>

@@ -211,4 +211,8 @@
     transform: translateY(-4px);
     box-shadow: 0 16px 40px hsl(250 50% 50% / 0.12);
   }
-}  .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+} 
+.no-scrollbar::-webkit-scrollbar { display: none; } 
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

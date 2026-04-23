@@ -35,8 +35,8 @@ const initialState: AuthState = {
   user: {
     name: "Sreerag Sathian",
     email: "sreerag@example.com",
-    phone: "+353 87 123 4567",
-    addresses: ["8 O'Connell St, Waterford City, X91 CH61"],
+    phone: "",
+    addresses: [],
     primaryAddressIndex: 0,
     orders: [
       {

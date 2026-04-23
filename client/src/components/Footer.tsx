@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Footer.tsx — Chao Thai Restaurant
  *
@@ -10,7 +8,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { UtensilsCrossed, MapPin, Phone, Clock, Camera, ThumbsUp } from "lucide-react";
+import { MapPin, Phone, Clock, Camera, ThumbsUp } from "lucide-react";
+import Image from "next/image";
 
 export default function Footer() {
   const [isVisible, setIsVisible] = useState(false);
@@ -39,34 +38,19 @@ export default function Footer() {
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
         }`}
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* ---- Column 1: Brand ---- */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <UtensilsCrossed className="w-5 h-5 text-brand-violet" strokeWidth={2.5} />
-              <span className="font-display font-bold text-2xl text-brand-text">Chao</span>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm overflow-hidden border border-brand-lavender-mid p-1.5">
+                <Image src="/logo.png" alt="Chao Logo" width={32} height={32} className="object-contain" />
+              </div>
+              <span className="font-display font-bold text-2xl text-brand-text tracking-tight">Chao</span>
             </div>
-            <p className="font-body text-brand-muted text-sm leading-relaxed max-w-xs">
+            <p className="font-body text-brand-muted text-sm leading-relaxed">
               Authentic Thai flavours crafted with love. Every dish tells a story rooted in
               Thailand&apos;s rich culinary heritage.
             </p>
-            <div className="flex gap-3 pt-1">
-              <a
-                href="#"
-                aria-label="Chao on Instagram"
-                className="w-9 h-9 rounded-full bg-white/60 border border-border flex items-center justify-center text-brand-muted hover:text-brand-violet hover:border-brand-violet transition-colors"
-              >
-                <Camera className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                aria-label="Chao on Facebook"
-                className="w-9 h-9 rounded-full bg-white/60 border border-border flex items-center justify-center text-brand-muted hover:text-brand-violet hover:border-brand-violet transition-colors"
-              >
-                <ThumbsUp className="w-4 h-4" />
-              </a>
-            </div>
           </div>
 
           {/* ---- Column 2: Quick Links ---- */}
@@ -79,6 +63,7 @@ export default function Footer() {
                 { href: "/",        label: "Home" },
                 { href: "/menu",    label: "Our Menu" },
                 { href: "/login",   label: "Login" },
+                { href: "/contact", label: "Contact Us" },
               ].map(({ href, label }) => (
                 <li key={href}>
                   <Link
@@ -110,15 +95,25 @@ export default function Footer() {
                   089 447 6628
                 </a>
               </li>
-              <li className="flex gap-3 text-sm text-brand-muted">
-                <Clock className="w-4 h-4 mt-0.5 shrink-0 text-brand-violet" />
-                <span className="font-body leading-relaxed text-xs">
-                  Mon–Thu: 12pm – 10pm<br />
-                  Fri–Sat: 12pm – 11pm<br />
-                  Sun: 1pm – 9pm
-                </span>
-              </li>
             </ul>
+          </div>
+
+          {/* ---- Column 4: The Developer ---- */}
+          <div className="bg-white/40 p-6 rounded-3xl border border-white/60 shadow-sm">
+            <h3 className="font-display font-semibold text-brand-text mb-4 text-xs uppercase tracking-[0.2em]">
+              The Developer
+            </h3>
+            <p className="font-body text-xs text-brand-muted leading-relaxed mb-4">
+              Crafted with precision by <strong>Sreerag Sathian</strong>. A dedicated developer passionate about creating premium digital experiences in Waterford.
+            </p>
+            <a 
+              href="https://www.linkedin.com/in/sreerag-sathian-212305189/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-brand-violet text-white rounded-xl font-display font-bold text-[10px] shadow-violet-glow hover:bg-brand-violet-dark transition-all active:scale-95"
+            >
+              Connect on LinkedIn
+            </a>
           </div>
         </div>
 

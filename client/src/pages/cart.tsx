@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSelector, useDispatch } from "react-redux";
@@ -152,7 +150,7 @@ export default function CartPage() {
             <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 shadow-sm overflow-hidden">
               <ul className="divide-y divide-brand-lavender-mid">
                 {items.map((item) => (
-                  <li key={item.id} className="p-6 flex flex-col sm:flex-row sm:items-center gap-6 group">
+                  <li key={item.cartId} className="p-6 flex flex-col sm:flex-row sm:items-center gap-6 group">
                     <div className="w-20 h-20 bg-lavender-gradient rounded-2xl flex items-center justify-center text-4xl shadow-inner shrink-0 group-hover:scale-105 transition-transform">
                       {item.emoji}
                     </div>
@@ -162,6 +160,18 @@ export default function CartPage() {
                           <h3 className="font-display font-bold text-brand-text text-lg truncate mb-1">
                             {item.name}
                           </h3>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {item.selectedProtein && (
+                              <span className="text-[10px] font-display font-bold uppercase tracking-wider bg-brand-violet/5 text-brand-violet px-2 py-0.5 rounded-full border border-brand-violet/10">
+                                {item.selectedProtein}
+                              </span>
+                            )}
+                            {item.selectedSide && (
+                              <span className="text-[10px] font-display font-bold uppercase tracking-wider bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full border border-amber-100">
+                                {item.selectedSide}
+                              </span>
+                            )}
+                          </div>
                           <p className="font-body text-brand-muted text-sm line-clamp-1">
                             {item.description}
                           </p>
@@ -173,7 +183,7 @@ export default function CartPage() {
                       <div className="mt-4 flex items-center justify-between">
                         <div className="flex items-center gap-1 bg-white border border-brand-lavender-mid rounded-xl p-1 shadow-sm">
                           <button 
-                            onClick={() => dispatch(updateQuantity({ id: item.id, quantity: item.quantity - 1 }))}
+                            onClick={() => dispatch(updateQuantity({ cartId: item.cartId, quantity: item.quantity - 1 }))}
                             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-brand-lavender text-brand-text transition-colors"
                           >
                             <Minus className="w-3.5 h-3.5" />
@@ -182,14 +192,14 @@ export default function CartPage() {
                             {item.quantity}
                           </span>
                           <button 
-                            onClick={() => dispatch(updateQuantity({ id: item.id, quantity: item.quantity + 1 }))}
+                            onClick={() => dispatch(updateQuantity({ cartId: item.cartId, quantity: item.quantity + 1 }))}
                             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-brand-lavender text-brand-text transition-colors"
                           >
                             <Plus className="w-3.5 h-3.5" />
                           </button>
                         </div>
                         <button 
-                          onClick={() => dispatch(removeFromCart(item.id))}
+                          onClick={() => dispatch(removeFromCart(item.cartId))}
                           className="flex items-center gap-1.5 text-red-500 hover:text-red-600 font-display font-bold text-xs uppercase tracking-wider transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />

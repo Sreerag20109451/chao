@@ -8,8 +8,7 @@
  * with the lavender main content area.
  */
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "react-router-dom";
 import { UtensilsCrossed, LayoutDashboard, Menu as MenuIcon, ShoppingBag, Settings, LogOut } from "lucide-react";
 
 const links = [
@@ -20,7 +19,8 @@ const links = [
 ];
 
 export default function Sidebar() {
-  const pathname = usePathname();
+  const location = useLocation();
+  const pathname = location.pathname;
 
   return (
     <aside className="w-64 bg-[hsl(240_15%_8%)] text-[hsl(252_40%_88%)] h-screen sticky top-0 flex flex-col border-r border-[hsl(240_12%_16%)]">
@@ -41,7 +41,7 @@ export default function Sidebar() {
           return (
             <Link
               key={href}
-              href={href}
+              to={href}
               className={[
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl font-display font-medium text-sm transition-all",
                 isActive
@@ -57,11 +57,23 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer / User */}
-      <div className="p-4 border-t border-[hsl(240_12%_16%)]">
+      <div className="p-4 border-t border-[hsl(240_12%_16%)] space-y-4">
         <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-display font-medium text-sm text-[hsl(252_40%_88%)] hover:bg-[hsl(0_72%_51%)/0.1] hover:text-[hsl(0_72%_51%)] transition-colors w-full">
           <LogOut className="w-5 h-5" />
           Log out
         </button>
+        
+        <div className="px-3 py-2 text-[10px] font-display text-[hsl(252_40%_60%)] leading-tight">
+          Developed by{" "}
+          <a 
+            href="https://www.linkedin.com/in/sreerag-sathian-212305189/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-[hsl(250_78%_60%)] font-bold hover:underline"
+          >
+            Sreerag Sathian
+          </a>
+        </div>
       </div>
     </aside>
   );

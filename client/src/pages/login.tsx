@@ -1,8 +1,6 @@
-"use client";
-
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "@/lib/features/authSlice";
 import { UtensilsCrossed, Eye, EyeOff, LogIn, Lock, Mail } from "lucide-react";
@@ -68,7 +66,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-lavender-gradient pt-32 pb-20 overflow-hidden relative">
+    <div className="min-h-screen pt-32 pb-20 overflow-hidden relative">
       <div className="max-w-xl mx-auto px-6 relative z-10">
         <header className="text-center mb-16">
           <div className="pill-badge mx-auto mb-6 w-fit uppercase tracking-[0.1em]">

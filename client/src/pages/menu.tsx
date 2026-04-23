@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MenuCard from "@/components/MenuCard";
@@ -9,13 +7,14 @@ import { Flame as FlameIcon, Leaf as LeafIcon, ChefHat as ChefHatIcon, WheatOff 
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState("all");
 
-  const filtered =
-    activeCategory === "all"
-      ? menuItems
-      : menuItems.filter((item) => item.category === activeCategory);
+  const filtered = menuItems
+    .filter((item) => item.available)
+    .filter((item) => 
+      activeCategory === "all" ? true : item.category === activeCategory
+    );
 
   return (
-    <div className="min-h-screen bg-lavender-gradient pt-32 pb-20">
+    <div className="min-h-screen pt-32 pb-20">
       <div className="max-w-6xl mx-auto px-6">
         <header className="text-center mb-16">
           <div className="pill-badge mx-auto mb-6 w-fit uppercase tracking-[0.1em]">

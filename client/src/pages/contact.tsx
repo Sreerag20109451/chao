@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Mail, Phone, MapPin, Clock, Send, MessageSquare } from "lucide-react";
@@ -72,7 +70,7 @@ export default function ContactPage() {
   const position: [number, number] = [52.262456, -7.116006];
 
   return (
-    <div className="min-h-screen bg-lavender-gradient pt-32 pb-20">
+    <div className="min-h-screen pt-32 pb-20">
       <div className="max-w-6xl mx-auto px-6">
         <header className="text-center mb-16">
           <div className="pill-badge mx-auto mb-6 w-fit">

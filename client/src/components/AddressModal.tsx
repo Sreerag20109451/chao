@@ -48,7 +48,7 @@ export default function AddressModal({ children }: { children: React.ReactNode }
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger render={children as React.ReactElement} />
-      <DialogContent className="sm:max-w-[425px] bg-white rounded-3xl p-8 border-none shadow-2xl">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-white rounded-3xl p-8 border-none shadow-2xl scrollbar-hide">
         <DialogHeader>
           <DialogTitle className="font-display font-bold text-2xl text-brand-text flex items-center gap-2">
             <MapPin className="w-5 h-5 text-brand-violet" />

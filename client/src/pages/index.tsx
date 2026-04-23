@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -17,7 +15,8 @@ import {
   Clock,
   ChevronRight,
   Bike,
-  Store
+  Store,
+  MapPin
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
@@ -30,18 +29,18 @@ const featuredItems = menuItems
 const features = [
   {
     icon: <Sparkles className="w-6 h-6 text-brand-violet" />,
-    title: "Fresh Daily",
-    body: "Every ingredient sourced fresh each morning from trusted local suppliers and specialist Thai importers.",
+    title: "Premium Ingredients",
+    body: "We source the finest local produce and authentic Thai spices to ensure every dish meets our high standards of quality.",
   },
   {
     icon: <Leaf className="w-6 h-6 text-brand-violet" />,
     title: "Authentically Thai",
-    body: "Recipes handed down through generations, cooked with the herbs and spices that define true Thai cuisine.",
+    body: "Waterford's most authentic Thai recipes, handed down through generations and cooked with fresh local ingredients.",
   },
   {
     icon: <Heart className="w-6 h-6 text-brand-violet" />,
-    title: "Warm Hospitality",
-    body: "We treat every guest like family. Our team is here to make your evening effortlessly memorable.",
+    title: "Healthy & Fresh",
+    body: "Wholesome, healthy Thai food prepared daily. No MSG, just pure natural herbs and vibrant Asian spices.",
   },
 ];
 
@@ -88,6 +87,49 @@ function ScrollReveal({ children, className = "", animation = "fade-up", style =
       className={`transition-all duration-1000 ease-out ${getAnimationClass()} ${className}`}
     >
       {children}
+    </div>
+  );
+}
+
+function TodaysDeal() {
+  return (
+    <div className="relative overflow-hidden bg-brand-violet rounded-[2.5rem] p-8 md:p-10 shadow-violet-glow group">
+      <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700" />
+      <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-brand-amber/10 rounded-full blur-3xl" />
+      
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-display font-bold text-white uppercase tracking-[0.2em]">
+            <Sparkles className="w-3 h-3 text-brand-amber" /> Limited Time Offer
+          </div>
+          <h2 className="font-display font-bold text-white text-3xl md:text-4xl leading-tight">
+            Today's <span className="text-brand-amber">Special Deal</span>.
+          </h2>
+          <p className="font-body text-brand-lavender/80 text-lg max-w-md">
+            Order any two Curry mains and get a complimentary <span className="text-white font-bold underline decoration-brand-amber underline-offset-4">Classic Pad Thai</span> on the house!
+          </p>
+        </div>
+        
+        <div className="flex flex-col items-center gap-4">
+          <div className="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20 text-center">
+            <p className="text-brand-lavender text-xs uppercase font-display font-bold tracking-widest mb-1">Ends in</p>
+            <div className="flex gap-4">
+              <div className="text-center">
+                <span className="block text-2xl font-display font-bold text-white">04</span>
+                <span className="text-[10px] text-brand-lavender/60 uppercase">Hrs</span>
+              </div>
+              <div className="text-brand-lavender/40 text-xl font-display">:</div>
+              <div className="text-center">
+                <span className="block text-2xl font-display font-bold text-white">42</span>
+                <span className="text-[10px] text-brand-lavender/60 uppercase">Min</span>
+              </div>
+            </div>
+          </div>
+          <Link href="/menu" className="w-full bg-brand-amber hover:bg-brand-amber/90 text-brand-text px-8 py-3.5 rounded-2xl font-display font-bold transition-all shadow-lg active:scale-95 text-center">
+            Claim This Deal
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
@@ -179,7 +221,11 @@ function LoggedInHome({ user }: { user: any }) {
             </ScrollReveal>
           </aside>
 
-          <main className="md:col-span-2 lg:col-span-3 space-y-8">
+          <main className="md:col-span-2 lg:col-span-3 space-y-10">
+            <ScrollReveal animation="fade-up">
+              <TodaysDeal />
+            </ScrollReveal>
+
             <section>
               <div className="flex items-center justify-between mb-6 px-2">
                 <h2 className="font-display font-bold text-brand-text text-2xl">Recommended for You</h2>
@@ -221,10 +267,10 @@ export default function Home() {
 
         <div className="max-w-6xl mx-auto px-6 text-center relative z-10">
           <h1 className="font-display font-bold text-brand-text text-5xl sm:text-6xl md:text-7xl tracking-tight mb-6 animate-in fade-in slide-in-from-top-10 duration-1000">
-            Taste the Heart of <span className="text-brand-violet">Thailand</span>.
+            Waterford's Finest <span className="text-brand-violet">Authentic Thai</span>.
           </h1>
           <p className="font-body text-brand-muted text-lg md:text-xl max-w-2xl mx-auto mb-10 animate-in fade-in slide-in-from-top-8 duration-1000 delay-200 fill-mode-both">
-            Experience the vibrant flavours of authentic Thai cuisine, crafted fresh every day in the heart of Waterford City.
+            Traditionally crafted Thai cuisine, made fresh daily with premium ingredients. Experience the heart of Thailand with Waterford's top-rated Thai takeaway and restaurant.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-top-6 duration-1000 delay-400 fill-mode-both">
             <Link href="/login" className="bg-brand-violet text-white px-8 h-12 rounded-full flex items-center font-display font-bold shadow-violet-glow hover:bg-brand-violet-dark transition-all">
@@ -235,6 +281,12 @@ export default function Home() {
             </Link>
           </div>
         </div>
+      </section>
+
+      <section className="py-24 max-w-6xl mx-auto px-6 relative z-10">
+        <ScrollReveal animation="fade-up">
+          <TodaysDeal />
+        </ScrollReveal>
       </section>
 
       <section className="py-24 bg-white/40 border-y border-brand-lavender-mid relative z-10">
@@ -258,6 +310,41 @@ export default function Home() {
                 <p className="font-body text-brand-muted text-sm leading-relaxed">{feature.body}</p>
               </ScrollReveal>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
+          <div className="bg-zinc-950 rounded-[3rem] p-12 md:p-16 text-center shadow-2xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-brand-violet/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            
+            <ScrollReveal animation="fade-up" className="relative z-10">
+              <div className="pill-badge mx-auto mb-8 bg-brand-violet/10 border-brand-violet/20 text-brand-violet">
+                <MapPin className="w-3.5 h-3.5" /> Delivery Coverage
+              </div>
+              <h2 className="font-display font-bold text-white text-3xl md:text-5xl mb-8 tracking-tight">
+                Our Delivery <span className="text-brand-violet">Areas</span>.
+              </h2>
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-3 max-w-4xl mx-auto">
+                {[
+                  "Waterford", "Ballybeg", "Ferrybank", "Hillview", 
+                  "Bishops Field", "Dunmore Road", "Ardkeen", "Lismore", 
+                  "Cork road", "Foxwood", "Gracedieu", "Kill Saint Lawrence"
+                ].map((area, i) => (
+                  <span 
+                    key={area} 
+                    className="font-display text-sm font-bold text-zinc-400 flex items-center"
+                  >
+                    {area}
+                    {i < 11 && <span className="ml-4 w-1 h-1 rounded-full bg-brand-violet/40" />}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-12 font-body text-zinc-500 text-sm italic">
+                Fast, fresh delivery within 45 minutes of ordering.
+              </p>
+            </ScrollReveal>
           </div>
         </div>
       </section>

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import Link from "next/link";
 import { useSelector, useDispatch } from "react-redux";
@@ -21,7 +19,7 @@ export default function PaymentsPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-lavender-gradient pt-32 pb-20">
+    <div className="min-h-screen pt-32 pb-20">
       <div className="max-w-4xl mx-auto px-6">
         <header className="mb-10">
           <Link 
