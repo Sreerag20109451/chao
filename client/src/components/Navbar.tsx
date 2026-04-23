@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, UtensilsCrossed, ShoppingCart, User, LogOut } from "lucide-react";
+import Image from "next/image";
+import { Menu, X, ShoppingCart, User, LogOut } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
 import { logout } from "@/lib/features/authSlice";
@@ -54,12 +55,21 @@ export default function Navbar() {
         <div className="flex-1 flex justify-start">
           <Link
             href="/"
-            className={`flex items-center gap-2 font-display font-bold text-2xl transition-colors ${
-              scrolled ? "text-white" : "text-brand-text"
-            }`}
+            className="flex items-center gap-3 transition-transform hover:scale-105 active:scale-95"
           >
-            <UtensilsCrossed className="w-6 h-6 text-brand-violet" strokeWidth={2.5} />
-            Chao
+            <div className={`relative w-10 h-10 rounded-xl overflow-hidden shadow-sm transition-all ${scrolled ? "bg-white/10" : "bg-white shadow-violet-glow/20"}`}>
+              <Image 
+                src="/logo.png" 
+                alt="Chao Logo" 
+                fill 
+                className="object-contain p-1"
+              />
+            </div>
+            <span className={`font-display font-bold text-2xl transition-colors ${
+              scrolled ? "text-white" : "text-brand-text"
+            }`}>
+              Chao
+            </span>
           </Link>
         </div>
 
@@ -156,7 +166,12 @@ export default function Navbar() {
 
             <SheetContent side="right" className="w-72 bg-brand-lavender border-l border-border">
               <div className="flex items-center justify-between mb-8">
-                <span className="font-display font-bold text-xl text-brand-text">Chao</span>
+                <div className="flex items-center gap-3">
+                  <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white shadow-sm border border-brand-lavender-mid">
+                    <Image src="/logo.png" alt="Chao Logo" fill className="object-contain p-1" />
+                  </div>
+                  <span className="font-display font-bold text-xl text-brand-text">Chao</span>
+                </div>
                 <button
                   className="inline-flex items-center justify-center p-2 text-brand-text hover:bg-brand-lavender-mid rounded-lg transition-colors"
                   onClick={() => setMobileOpen(false)}

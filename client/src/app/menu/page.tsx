@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MenuCard from "@/components/MenuCard";
 import { menuItems, categories } from "@/lib/menuData";
-import { Flame as FlameIcon, Leaf as LeafIcon, ChefHat as ChefHatIcon, WheatOff as WheatOffIcon } from "lucide-react";
+import { Flame as FlameIcon, Leaf as LeafIcon, ChefHat as ChefHatIcon, WheatOff as WheatOffIcon, Utensils } from "lucide-react";
 
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState("all");
@@ -17,11 +17,14 @@ export default function MenuPage() {
   return (
     <div className="min-h-screen bg-lavender-gradient pt-32 pb-20">
       <div className="max-w-6xl mx-auto px-6">
-        <header className="text-center mb-12">
-          <h1 className="font-serif-thai font-semibold text-brand-text text-4xl md:text-5xl mb-4">
-            Our Menu
+        <header className="text-center mb-16">
+          <div className="pill-badge mx-auto mb-6 w-fit uppercase tracking-[0.1em]">
+            <Utensils className="w-3.5 h-3.5 text-brand-amber" /> Our Menu
+          </div>
+          <h1 className="font-display font-bold text-brand-text text-5xl md:text-6xl tracking-tight mb-4">
+            Taste the <span className="text-brand-violet">Exquisite</span>.
           </h1>
-          <p className="font-body text-brand-muted text-lg max-w-xl mx-auto">
+          <p className="font-body text-brand-muted text-lg max-w-2xl mx-auto">
             From fragrant starters to indulgent desserts — everything crafted fresh, every day.
           </p>
         </header>

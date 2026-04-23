@@ -32,8 +32,41 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: null,
-  isAuthenticated: false,
+  user: {
+    name: "Sreerag Sathian",
+    email: "sreerag@example.com",
+    phone: "+353 87 123 4567",
+    addresses: ["8 O'Connell St, Waterford City, X91 CH61"],
+    primaryAddressIndex: 0,
+    orders: [
+      {
+        id: "CH-8821",
+        date: "2024-04-20",
+        total: 42.50,
+        status: "delivered",
+        orderType: "delivery",
+        items: [
+          { name: "Pad Thai", quantity: 2, price: 14.50 },
+          { name: "Thai Green Curry", quantity: 1, price: 13.50 }
+        ]
+      },
+      {
+        id: "CH-7912",
+        date: "2024-03-15",
+        total: 28.00,
+        status: "delivered",
+        orderType: "collection",
+        items: [
+          { name: "Massaman Curry", quantity: 2, price: 14.00 }
+        ]
+      }
+    ],
+    paymentMethods: [
+      { id: "pm-1", type: "visa", last4: "4242", isPrimary: true },
+      { id: "pm-2", type: "mastercard", last4: "8888", isPrimary: false }
+    ]
+  },
+  isAuthenticated: true,
 };
 
 const authSlice = createSlice({
