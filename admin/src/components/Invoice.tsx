@@ -184,7 +184,11 @@ export default function Invoice({ data, onClose }: InvoiceProps) {
         @media print {
           .no-print { display: none !important; }
           body * { visibility: hidden; }
-          #invoice-content, #invoice-content * { visibility: visible; }
+          #invoice-content, #invoice-content * { 
+            visibility: visible; 
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           #invoice-content {
             position: absolute;
             left: 0;
@@ -192,7 +196,11 @@ export default function Invoice({ data, onClose }: InvoiceProps) {
             width: 100%;
             padding: 24px !important;
             margin: 0 !important;
+            border: none !important;
           }
+          /* Force borders to be visible */
+          .border-zinc-900 { border-color: #000000 !important; }
+          .bg-zinc-900 { background-color: #000000 !important; }
         }
       `}</style>
     </div>

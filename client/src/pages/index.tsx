@@ -303,7 +303,7 @@ function LoggedInHome({ user }: { user: any }) {
 export default function Home() {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [deals, setDeals] = useState<Deal[]>([]);
-  const { isOpen: isStoreOpen, isLoaded: isStatusLoaded } = useStoreStatus();
+  const { isOpen: isStoreOpen, isLoaded: isStatusLoaded, settings } = useStoreStatus();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -384,36 +384,98 @@ export default function Home() {
       </section>
 
       <section className="py-24 relative overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 relative z-10">
-          <div className="bg-zinc-950 rounded-[3rem] p-12 md:p-16 text-center shadow-2xl relative overflow-hidden group">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="bg-zinc-950 rounded-[3.5rem] p-8 md:p-16 shadow-2xl relative overflow-hidden group">
             <div className="absolute inset-0 bg-brand-violet/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             
-            <ScrollReveal animation="fade-up" className="relative z-10">
-              <div className="pill-badge mx-auto mb-8 bg-brand-violet/10 border-brand-violet/20 text-brand-violet">
-                <MapPin className="w-3.5 h-3.5" /> Delivery Coverage
-              </div>
-              <h2 className="font-display font-bold text-white text-3xl md:text-5xl mb-8 tracking-tight">
-                Our Delivery <span className="text-brand-violet">Areas</span>.
-              </h2>
-              <div className="flex flex-wrap justify-center gap-x-4 gap-y-3 max-w-4xl mx-auto">
-                {[
-                  "Waterford", "Ballybeg", "Ferrybank", "Hillview", 
-                  "Bishops Field", "Dunmore Road", "Ardkeen", "Lismore", 
-                  "Cork road", "Foxwood", "Gracedieu", "Kill Saint Lawrence"
-                ].map((area, i) => (
-                  <span 
-                    key={area} 
-                    className="font-display text-sm font-bold text-zinc-400 flex items-center"
-                  >
-                    {area}
-                    {i < 11 && <span className="ml-4 w-1 h-1 rounded-full bg-brand-violet/40" />}
-                  </span>
-                ))}
-              </div>
-              <p className="mt-12 font-body text-zinc-500 text-sm italic">
-                Fast, fresh delivery within 45 minutes of ordering.
-              </p>
-            </ScrollReveal>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 relative z-10">
+              {/* Left: Delivery Areas */}
+              <ScrollReveal animation="fade-up" className="space-y-8">
+                <div>
+                  <div className="pill-badge mb-6 bg-brand-violet/20 border-brand-violet/30 text-brand-violet">
+                    <MapPin className="w-3.5 h-3.5" /> Delivery Coverage
+                  </div>
+                  <h2 className="font-display font-bold text-white text-3xl md:text-5xl tracking-tight leading-tight">
+                    Our Delivery <span className="text-brand-violet">Areas</span>.
+                  </h2>
+                  <p className="font-body text-zinc-400 mt-4 text-lg">
+                    Fast, fresh delivery within 45 minutes of ordering across Waterford.
+                  </p>
+                </div>
+                
+                <div className="flex flex-wrap gap-x-6 gap-y-4">
+                  {[
+                    "Waterford City", "Ballybeg", "Ferrybank", "Hillview", 
+                    "Bishops Field", "Dunmore Road", "Ardkeen", "Lismore", 
+                    "Cork road", "Foxwood", "Gracedieu", "Kill Saint Lawrence"
+                  ].map((area, i) => (
+                    <span 
+                      key={area} 
+                      className="font-display text-sm font-bold text-zinc-400 flex items-center hover:text-white transition-colors cursor-default"
+                    >
+                      <MapPin className="w-3 h-3 mr-2 text-brand-violet opacity-60" />
+                      {area}
+                    </span>
+                  ))}
+                </div>
+              </ScrollReveal>
+
+              {/* Right: Opening Hours */}
+              <ScrollReveal animation="fade-up" className="space-y-8">
+                <div>
+                  <div className="pill-badge mb-6 bg-brand-violet/20 border-brand-violet/30 text-brand-violet">
+                    <Clock className="w-3.5 h-3.5" /> Opening Times
+                  </div>
+                  <h2 className="font-display font-bold text-white text-3xl md:text-5xl tracking-tight leading-tight">
+                    When We're <span className="text-brand-violet">Open</span>.
+                  </h2>
+                </div>
+
+                <div className="space-y-3">
+                  {isStatusLoaded && settings?.openingHours ? (() => {
+                    const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+                    const dayMap: Record<string, string> = { 
+                      mon: "Monday", tue: "Tuesday", wed: "Wednesday", 
+                      thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" 
+                    };
+                    
+                    const todayIndex = new Date().getDay();
+                    const orderedKeys = [
+                      ...dayKeys.slice(todayIndex),
+                      ...dayKeys.slice(0, todayIndex)
+                    ];
+
+                    return orderedKeys.map((key, index) => {
+                      const value = settings.openingHours[key];
+                      const isToday = index === 0;
+                      
+                      return (
+                        <div 
+                          key={key} 
+                          className={`flex items-center justify-between p-4 rounded-2xl transition-all ${
+                            isToday 
+                              ? "bg-brand-violet text-white shadow-violet-glow scale-105" 
+                              : "bg-white/5 border border-white/5 text-zinc-300 hover:bg-white/10"
+                          }`}
+                        >
+                          <span className="font-display font-bold text-sm">
+                            {dayMap[key]}
+                            {isToday && <span className="ml-2 text-[10px] uppercase bg-white/20 px-2 py-0.5 rounded-full">Today</span>}
+                          </span>
+                          <span className={`font-display font-bold text-sm ${isToday ? "text-white" : "text-brand-violet"}`}>
+                            {value.closed ? "Closed" : `${value.open} - ${value.close}`}
+                          </span>
+                        </div>
+                      );
+                    });
+                  })() : (
+                    <div className="py-12 text-center text-zinc-500 italic">
+                      Loading hours...
+                    </div>
+                  )}
+                </div>
+              </ScrollReveal>
+            </div>
           </div>
         </div>
       </section>

@@ -18,7 +18,8 @@ import {
   Bike,
   Store,
   MapPin,
-  Phone
+  Phone,
+  Clock
 } from "lucide-react";
 import AddressModal from "@/components/AddressModal";
 import { updateProfile, setPrimaryAddress, addOrder } from "@/lib/features/authSlice";
@@ -33,10 +34,17 @@ import autoTable from "jspdf-autotable";
 export default function CartPage() {
   const { items, orderType } = useSelector((state: RootState) => state.cart);
   const { user } = useSelector((state: RootState) => state.auth);
-  const { isOpen: isStoreOpen, isLoaded } = useStoreStatus();
+  const { isOpen: isStoreOpen, isLoaded, settings } = useStoreStatus();
   const dispatch = useDispatch();
 
   const [phone, setPhone] = useState(user?.phone || "");
+  const [pickupMinutes, setPickupMinutes] = useState(20);
+  
+  useEffect(() => {
+    if (settings?.minPrepTime && pickupMinutes < settings.minPrepTime) {
+      setPickupMinutes(settings.minPrepTime);
+    }
+  }, [settings?.minPrepTime]);
   const [placedOrderId, setPlacedOrderId] = useState<string | null>(null);
 
   const subtotal = items.reduce(
@@ -44,11 +52,11 @@ export default function CartPage() {
     0
   );
   const serviceCharge = subtotal * 0.05;
-  const deliveryFee = orderType === "collection" ? 0 : (subtotal > 30 ? 0 : 3.5);
+  const deliveryFee = orderType === "collection" ? 0 : (subtotal > 30 ? 0 : 3.0);
   const total = subtotal + serviceCharge + deliveryFee;
 
   const currentAddress = user?.addresses[user?.primaryAddressIndex || 0];
-  const isCheckoutDisabled = !isStoreOpen || (orderType === "delivery" && (!currentAddress || !phone.trim()));
+  const isCheckoutDisabled = !isStoreOpen || !phone.trim() || (orderType === "delivery" && !currentAddress);
 
   useEffect(() => {
     if (user?.phone && !phone) setPhone(user.phone);
@@ -94,86 +102,172 @@ export default function CartPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
           <div className="lg:col-span-2 space-y-6">
-            {orderType === "delivery" && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                {!user?.phone && (
-                  <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 shadow-sm">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
-                        <Phone className="w-6 h-6 text-brand-violet" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-display font-bold text-brand-text text-lg mb-2">Contact Number</h3>
-                        <div className="flex gap-2">
-                          <input 
-                            type="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="Required for delivery..."
-                            className="w-full bg-white border border-brand-lavender-mid rounded-xl px-4 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/20"
-                          />
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (phone.trim()) {
-                                dispatch(updateProfile({ phone }));
-                                try {
-                                  if (auth.currentUser) {
-                                    await updateDoc(doc(db, "users", auth.currentUser.uid), { phone });
-                                    toast.success("Phone number saved!");
-                                  }
-                                } catch (e) {
-                                  console.error(e);
+            <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500 mb-6">
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
+                    <Phone className="w-6 h-6 text-brand-violet" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-display font-bold text-brand-text text-lg mb-2">Contact Number</h3>
+                    <div className="flex gap-2">
+                      <input 
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Enter phone number for order updates..."
+                        className="w-full bg-white border border-brand-lavender-mid rounded-xl px-4 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/20"
+                      />
+                      {user && phone !== user.phone && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (phone.trim()) {
+                              dispatch(updateProfile({ phone }));
+                              try {
+                                if (auth.currentUser) {
+                                  await updateDoc(doc(db, "users", auth.currentUser.uid), { phone });
+                                  toast.success("Phone updated in profile!");
                                 }
+                              } catch (e) {
+                                console.error(e);
                               }
-                            }}
-                            className="bg-brand-violet hover:bg-brand-violet-dark text-white rounded-xl px-6 py-2 font-display font-bold text-sm shadow-sm transition-all"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      </div>
+                            }
+                          }}
+                          className="bg-brand-violet/10 hover:bg-brand-violet/20 text-brand-violet rounded-xl px-4 py-2 font-display font-bold text-xs transition-all whitespace-nowrap"
+                        >
+                          Save to Profile
+                        </button>
+                      )}
                     </div>
                   </div>
-                )}
+                </div>
+              </div>
+            </div>
 
-                <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
-                  <div className="flex items-start gap-4 flex-1">
+            {orderType === "delivery" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500 mb-6">
+                <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 flex flex-col shadow-sm">
+                  <div className="flex items-start gap-4 mb-4">
                     <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
                       <MapPin className="w-6 h-6 text-brand-violet" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-display font-bold text-brand-text text-lg mb-1">Delivery Address</h3>
+                      <p className="text-xs text-brand-muted font-body mb-4">Where should we bring your Thai feast?</p>
+                      
                       {user?.addresses && user.addresses.length > 0 ? (
-                        <div className="space-y-3 mt-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                           {user.addresses.map((addr, idx) => (
                             <button
                               key={idx}
                               onClick={() => dispatch(setPrimaryAddress(idx))}
-                              className={`w-full text-left p-3 rounded-xl border transition-all text-sm ${
+                              className={`w-full text-left p-4 rounded-2xl border transition-all text-xs relative ${
                                 idx === user.primaryAddressIndex 
-                                  ? "bg-brand-violet/5 border-brand-violet font-semibold text-brand-text" 
-                                  : "bg-white border-brand-lavender-mid text-brand-muted hover:border-brand-violet/30"
+                                  ? "bg-brand-violet text-white border-brand-violet shadow-violet-glow font-semibold" 
+                                  : "bg-white border-brand-lavender-mid text-brand-text hover:border-brand-violet/30"
                               }`}
                             >
                               {addr}
+                              {idx === user.primaryAddressIndex && (
+                                <div className="absolute top-2 right-2 bg-white/20 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-tighter">Primary</div>
+                              )}
                             </button>
                           ))}
                         </div>
                       ) : (
-                        <p className="font-body text-brand-muted text-sm max-w-sm">
-                          No delivery address added yet. Please add one.
-                        </p>
+                        <div className="bg-brand-lavender/20 border border-dashed border-brand-lavender-mid rounded-2xl p-6 text-center">
+                          <p className="font-body text-brand-muted text-sm mb-4">
+                            No delivery address added yet.
+                          </p>
+                          <AddressModal>
+                            <button type="button" className="inline-flex items-center gap-2 bg-brand-violet text-white font-display font-bold text-sm px-6 py-3 rounded-xl transition-all shadow-violet-glow">
+                              <Plus className="w-4 h-4" />
+                              Add Delivery Address
+                            </button>
+                          </AddressModal>
+                        </div>
                       )}
                     </div>
                   </div>
                   
-                  <AddressModal>
-                    <button type="button" className="flex items-center gap-2 bg-white border border-brand-lavender-mid hover:border-brand-violet hover:bg-brand-violet/5 text-brand-text font-display font-bold text-sm px-5 py-3 rounded-xl transition-all shadow-sm shrink-0 self-start md:self-center">
-                      <Plus className="w-4 h-4 text-brand-violet" />
-                      Add New
-                    </button>
-                  </AddressModal>
+                  {user?.addresses && user.addresses.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-brand-lavender-mid flex justify-end">
+                      <AddressModal>
+                        <button type="button" className="flex items-center gap-2 text-brand-violet font-display font-bold text-xs uppercase tracking-widest hover:underline">
+                          <Plus className="w-3.5 h-3.5" />
+                          Add another address
+                        </button>
+                      </AddressModal>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {orderType === "collection" && (
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500 mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
+                    <Clock className="w-6 h-6 text-brand-violet" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-display font-bold text-brand-text text-lg mb-2">Requested Pickup Time</h3>
+                    <p className="text-xs text-brand-muted font-body mb-4">
+                      When would you like to collect your order? 
+                      {settings?.minPrepTime && (
+                        <span className="block mt-1 text-brand-violet font-bold">
+                          Note: Minimum preparation time is {settings.minPrepTime} minutes.
+                        </span>
+                      )}
+                    </p>
+                    <div className="flex flex-col gap-4">
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                        {[15, 20, 30, 45, 60]
+                          .filter(mins => mins >= (settings?.minPrepTime || 0))
+                          .map((mins) => (
+                          <button
+                            key={mins}
+                            type="button"
+                            onClick={() => setPickupMinutes(mins)}
+                            className={`py-3 px-2 rounded-xl font-display font-bold text-xs transition-all border ${
+                              pickupMinutes === mins 
+                                ? "bg-brand-violet text-white border-brand-violet shadow-violet-glow" 
+                                : "bg-white border-brand-lavender-mid text-brand-muted hover:border-brand-violet/30"
+                            }`}
+                          >
+                            {mins} mins
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-display font-bold text-brand-muted uppercase">Custom:</span>
+                        <input 
+                          type="number"
+                          min={settings?.minPrepTime || 0}
+                          value={pickupMinutes}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setPickupMinutes(val);
+                          }}
+                          onBlur={() => {
+                            if (settings?.minPrepTime && pickupMinutes < settings.minPrepTime) {
+                              setPickupMinutes(settings.minPrepTime);
+                              toast.info(`Time adjusted to minimum prep time of ${settings.minPrepTime} mins.`);
+                            }
+                          }}
+                          className="w-20 px-3 py-2 bg-white border border-brand-lavender-mid rounded-xl font-display font-bold text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/20"
+                        />
+                        <span className="text-xs font-body text-brand-muted">minutes from now</span>
+                      </div>
+                      <div className="bg-brand-violet/5 border border-brand-violet/10 rounded-2xl p-4 flex items-center justify-between">
+                        <span className="text-sm font-display font-bold text-brand-text">Estimated Collection Time:</span>
+                        <span className="text-lg font-display font-bold text-brand-violet">
+                          {new Date(Date.now() + pickupMinutes * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -323,6 +417,7 @@ export default function CartPage() {
                       address: orderType === "delivery" ? currentAddress : null,
                       customerName: user?.name || "Guest",
                       customerPhone: phone || user?.phone || null,
+                      requestedPickupTime: orderType === "collection" ? pickupMinutes : null,
                     };
                     
                     const docRef = await placeOrder(user?.email || "guest", orderData);
@@ -410,6 +505,10 @@ export default function CartPage() {
                       doc.text(currentAddress, pageW / 2, 64, { maxWidth: pageW / 2 - 14 });
                     } else {
                       doc.text("Collection / Takeaway", pageW / 2, 64);
+                      if (orderType === "collection") {
+                        doc.setFont("helvetica", "bold");
+                        doc.text(`Requested Pickup: ${pickupMinutes} mins`, pageW / 2, 68);
+                      }
                     }
 
                     // ── Items table ──
@@ -472,7 +571,7 @@ export default function CartPage() {
                       id: docRef.id,
                       date: new Date().toLocaleDateString(),
                       total: total,
-                      status: "pending" as any,
+                      status: "pending" as const,
                       items: items.map(i => ({ name: i.name, quantity: i.quantity, price: i.basePrice || 0 })),
                       orderType: orderType,
                     };
@@ -515,8 +614,12 @@ export default function CartPage() {
               
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-sm font-body border-b border-brand-lavender-mid pb-3">
-                  <span className="text-brand-muted">Estimated Prep Time:</span>
-                  <span className="font-bold text-brand-text">~20-30 mins</span>
+                  <span className="text-brand-muted">
+                    {orderType === "collection" ? "Requested Pickup Time:" : "Estimated Prep Time:"}
+                  </span>
+                  <span className="font-bold text-brand-text">
+                    ~{orderType === "collection" ? pickupMinutes : "20-30"} mins
+                  </span>
                 </div>
                 {orderType === "delivery" && (
                   <div className="flex justify-between items-center text-sm font-body">

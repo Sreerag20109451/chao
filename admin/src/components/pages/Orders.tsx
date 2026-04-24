@@ -49,6 +49,14 @@ export default function AdminOrders() {
     }
   };
 
+  const updatePrepTime = async (orderId: string, mins: number) => {
+    try {
+      await updateDoc(doc(db, "orders", orderId), { requestedPickupTime: mins });
+    } catch (e) {
+      console.error("Failed to update prep time:", e);
+    }
+  };
+
   const filtered = orders.filter(o =>
     !search ||
     o.id.toLowerCase().includes(search.toLowerCase()) ||
@@ -118,10 +126,10 @@ export default function AdminOrders() {
               <tr className="bg-brand-lavender/10">
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Order ID</th>
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Items</th>
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Total</th>
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Time</th>
+                <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Prep Time</th>
+                <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Placed At</th>
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider text-right">Invoice</th>
               </tr>
             </thead>
@@ -138,7 +146,6 @@ export default function AdminOrders() {
               ) : (
                 filtered.map(order => (
                   <tr key={order.id} className="hover:bg-brand-lavender/5 transition-colors">
-                    {/* ID */}
                     <td className="px-6 py-4 font-display font-bold text-brand-violet">
                       #{order.id.slice(0, 6)}
                       {order.source === "pos" && (
@@ -146,23 +153,15 @@ export default function AdminOrders() {
                       )}
                     </td>
 
-                    {/* Customer */}
                     <td className="px-6 py-4">
                       <p className="font-display font-bold text-brand-text">{order.customerName || "Guest"}</p>
                       <p className="text-[10px] text-brand-muted font-bold uppercase tracking-wider">{order.orderType}</p>
                     </td>
 
-                    {/* Items */}
-                    <td className="px-6 py-4 font-body text-sm text-brand-muted">
-                      {order.items?.length || 0} items
-                    </td>
-
-                    {/* Total */}
                     <td className="px-6 py-4 font-display font-bold text-brand-text text-lg">
                       £{order.total?.toFixed(2) || "0.00"}
                     </td>
 
-                    {/* Status dropdown */}
                     <td className="px-6 py-4">
                       <div className="relative inline-block">
                         <select
@@ -179,14 +178,31 @@ export default function AdminOrders() {
                       </div>
                     </td>
 
-                    {/* Time */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="number"
+                            defaultValue={order.requestedPickupTime || 20}
+                            onBlur={(e) => updatePrepTime(order.id, parseInt(e.target.value))}
+                            className="w-16 px-2 py-1 bg-brand-lavender/10 border border-brand-lavender-mid rounded text-xs font-bold text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-violet"
+                          />
+                          <span className="text-[10px] text-brand-muted font-bold uppercase">Min</span>
+                        </div>
+                        {order.requestedPickupTime && order.createdAt && (
+                          <p className="text-[9px] text-brand-violet font-bold uppercase tracking-tighter">
+                            Target: {new Date(order.createdAt.seconds * 1000 + order.requestedPickupTime * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        )}
+                      </div>
+                    </td>
+
                     <td className="px-6 py-4 text-xs font-body text-brand-muted">
                       {order.createdAt
                         ? new Date(order.createdAt.seconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                         : "Just now"}
                     </td>
 
-                    {/* Invoice button */}
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => setInvoiceOrder(order)}

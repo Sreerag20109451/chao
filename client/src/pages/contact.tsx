@@ -127,13 +127,9 @@ export default function ContactPage() {
             </div>
 
             <div className="bg-brand-violet text-white rounded-3xl p-8 shadow-xl">
-              <div className="flex items-start gap-5 mb-8 pb-8 border-b border-white/10">
+              <div className="flex items-start gap-5">
                 <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0"><MapPin className="w-6 h-6 text-white" /></div>
                 <div><h3 className="font-display font-bold text-xl mb-2">Find Us</h3><p className="font-body text-white/80 leading-relaxed">8 O'Connell St, Trinity Without<br />Waterford City, X91 CH61</p></div>
-              </div>
-              <div className="flex items-start gap-5">
-                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0"><Clock className="w-6 h-6 text-white" /></div>
-                <div><h3 className="font-display font-bold text-xl mb-4">Opening Hours</h3><ul className="space-y-2 text-white/80 font-body text-sm"><li className="flex justify-between gap-4"><span>Mon – Thu</span><span className="font-semibold text-white">12:00 PM – 10:00 PM</span></li><li className="flex justify-between gap-4"><span>Fri – Sat</span><span className="font-semibold text-white">12:00 PM – 11:00 PM</span></li><li className="flex justify-between gap-4"><span>Sunday</span><span className="font-semibold text-white">1:00 PM – 9:00 PM</span></li></ul></div>
               </div>
             </div>
 

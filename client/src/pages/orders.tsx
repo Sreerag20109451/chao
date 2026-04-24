@@ -51,12 +51,28 @@ export default function OrdersPage() {
                 <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-brand-lavender-mid/50">
                   <div className="flex items-center gap-6">
                     <div className="w-14 h-14 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
-                      {order.status === "delivered" ? <CheckCircle2 className="w-7 h-7 text-emerald-500" /> : order.status === "processing" ? <Clock className="w-7 h-7 text-brand-violet animate-pulse" /> : <XCircle className="w-7 h-7 text-red-500" />}
+                      {order.status === "delivered" ? (
+                        <CheckCircle2 className="w-7 h-7 text-emerald-500" />
+                      ) : order.status === "cancelled" ? (
+                        <XCircle className="w-7 h-7 text-red-500" />
+                      ) : (
+                        <Clock className="w-7 h-7 text-brand-violet animate-pulse" />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-display font-bold text-brand-text text-lg">Order #{order.id}</span>
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${order.status === "delivered" ? "bg-emerald-100 text-emerald-700" : order.status === "processing" ? "bg-brand-violet/10 text-brand-violet" : "bg-red-100 text-red-700"}`}>{order.status}</span>
+                        <span className="font-display font-bold text-brand-text text-lg">Order #{order.id.slice(0, 8)}</span>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
+                          order.status === "delivered" 
+                            ? "bg-emerald-100 text-emerald-700" 
+                            : order.status === "cancelled"
+                            ? "bg-red-100 text-red-700"
+                            : order.status === "ready"
+                            ? "bg-blue-100 text-blue-700 shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+                            : "bg-brand-violet/10 text-brand-violet"
+                        }`}>
+                          {order.status}
+                        </span>
                       </div>
                       <div className="flex items-center gap-4 text-sm font-body text-brand-muted">
                         <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{order.date}</span>

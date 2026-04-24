@@ -4,7 +4,7 @@ export interface Order {
   id: string;
   date: string;
   total: number;
-  status: "delivered" | "processing" | "cancelled";
+  status: "pending" | "preparing" | "ready" | "delivered" | "cancelled";
   items: { name: string; quantity: number; price: number }[];
   orderType: "delivery" | "collection";
 }

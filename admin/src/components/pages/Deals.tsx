@@ -222,7 +222,7 @@ export default function DealsPage() {
                     >
                       <Checkbox 
                         id={`item-${item.id}`}
-                        checked={editingDeal?.items?.includes(item.id)}
+                        checked={!!editingDeal?.items?.includes(item.id)}
                         onCheckedChange={() => toggleItemSelection(item.id)}
                         className="data-[state=checked]:scale-110 transition-transform"
                       />
