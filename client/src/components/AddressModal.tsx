@@ -14,6 +14,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { addAddress } from "@/lib/features/authSlice";
 import { RootState } from "@/lib/store";
 import { updateUserProfile } from "@/lib/firebase/auth/service";
+import { doc, updateDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { MapPin } from "lucide-react";
 
 export default function AddressModal({ children }: { children: React.ReactNode }) {
@@ -45,20 +47,13 @@ export default function AddressModal({ children }: { children: React.ReactNode }
       
       // Update in Firestore
       if (user?.email) {
-        // Since we don't store uid in Redux directly in a neat way, wait we can just lookup user by email or if uid is in user obj
-        // But user is fetched by auth state. The firebase uid is usually the doc ID in "users".
-        // Let's assume user.uid exists or we can just skip or add a way to get uid.
-        // Actually the easier way is to update the doc using `auth.currentUser.uid`
-        import("@/lib/firebase/config").then(async ({ auth, db }) => {
-          if (auth.currentUser) {
-            const { doc, updateDoc } = await import("firebase/firestore");
-            const userDocRef = doc(db, "users", auth.currentUser.uid);
-            await updateDoc(userDocRef, {
-              addresses: [...(user.addresses || []), fullAddress],
-              primaryAddressIndex: user.addresses?.length || 0
-            });
-          }
-        });
+        if (auth.currentUser) {
+          const userDocRef = doc(db, "users", auth.currentUser.uid);
+          updateDoc(userDocRef, {
+            addresses: [...(user.addresses || []), fullAddress],
+            primaryAddressIndex: user.addresses?.length || 0
+          }).catch(console.error);
+        }
       }
 
       setIsOpen(false);

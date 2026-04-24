@@ -43,8 +43,16 @@ export const addMenuItem = async (item: Omit<MenuItem, "id">) => {
 };
 
 export const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
+  console.log(`Updating menu item ${id}:`, updates);
   const itemRef = doc(db, MENU_COLLECTION, id);
-  return await updateDoc(itemRef, updates);
+  try {
+    const res = await updateDoc(itemRef, updates);
+    console.log(`Successfully updated menu item ${id}`);
+    return res;
+  } catch (error) {
+    console.error(`Failed to update menu item ${id}:`, error);
+    throw error;
+  }
 };
 
 export const deleteMenuItem = async (id: string) => {

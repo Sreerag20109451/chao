@@ -11,7 +11,7 @@ export const CATEGORIES: Category[] = [
 
 export type MeatType = 'Chicken' | 'Lamb' | 'Prawn' | 'Beef';
 export type SideType = 'Jasmine Rice' | 'Egg Fried Rice' | 'Brown Rice' | 'Chips' | 'Rice Noodles';
-export type Allergen = 'Gluten' | 'Dairy/Milk' | 'Nuts' | 'Crustaceans' | 'Soy' | 'Eggs';
+export type Allergen = 'Gluten' | 'Dairy/Milk' | 'Nuts' | 'Crustaceans' | 'Soy' | 'Eggs' | 'Vegan' | 'Vegetarian';
 
 export interface MenuItem {
   id: string;

@@ -25,8 +25,8 @@ import { updateProfile, setPrimaryAddress, addOrder } from "@/lib/features/authS
 import { useStoreStatus } from "@/hooks/useStoreStatus";
 import { toast } from "sonner";
 import { placeOrder } from "@/lib/firebase/orders/service";
-import { getDocs, collection, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { getDocs, collection, query, where, doc, updateDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -118,9 +118,7 @@ export default function CartPage() {
                               if (phone.trim()) {
                                 dispatch(updateProfile({ phone }));
                                 try {
-                                  const { auth, db } = await import("@/lib/firebase/config");
                                   if (auth.currentUser) {
-                                    const { doc, updateDoc } = await import("firebase/firestore");
                                     await updateDoc(doc(db, "users", auth.currentUser.uid), { phone });
                                     toast.success("Phone number saved!");
                                   }

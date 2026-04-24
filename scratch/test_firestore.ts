@@ -1,9 +1,9 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { initializeFirestore, collection, addDoc } from "firebase/firestore";
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
 
-dotenv.config({ path: resolve(__dirname, '../../client/.env') });
+dotenv.config({ path: resolve(__dirname, '../client/.env') });
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -17,7 +17,9 @@ const firebaseConfig = {
 async function testFirestore() {
   try {
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const db = initializeFirestore(app, {
+      experimentalForceLongPolling: true
+    });
     console.log("Attempting to write to Firestore...");
     const docRef = await addDoc(collection(db, "test_collection"), {
       test: "Hello from scratch script",

@@ -4,16 +4,22 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Image from "next/image";
-import { Menu, X, LayoutDashboard, Utensils, ShoppingBag, Settings, LogOut, User } from "lucide-react";
+import { Menu, X, LayoutDashboard, Utensils, ShoppingBag, Settings, LogOut, User, Receipt, Tag, Bike } from "lucide-react";
+
+import { useAuth } from "@/lib/authContext";
 
 const navLinks = [
   { href: "/",         label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+  { href: "/billing",  label: "Billing/POS", icon: <Receipt className="w-4 h-4" /> },
   { href: "/menu",     label: "Menu",      icon: <Utensils className="w-4 h-4" /> },
+  { href: "/deals",    label: "Deals",     icon: <Tag className="w-4 h-4" /> },
   { href: "/orders",   label: "Orders",    icon: <ShoppingBag className="w-4 h-4" /> },
+  { href: "/drivers",  label: "Drivers",   icon: <Bike className="w-4 h-4" /> },
   { href: "/settings", label: "Settings",  icon: <Settings className="w-4 h-4" /> },
 ];
 
 export default function AdminNavbar() {
+  const { logout, user } = useAuth();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -75,10 +81,12 @@ export default function AdminNavbar() {
                 </div>
                 <div className="text-left leading-tight">
                     <p className="text-[10px] font-bold text-brand-muted uppercase tracking-wider">Admin</p>
-                    <p className="text-sm font-bold">Sreerag</p>
+                    <p className="text-sm font-bold">{user?.name || "Admin"}</p>
                 </div>
              </div>
-             <button className={`p-2.5 rounded-xl border transition-all hover:bg-red-50 hover:text-red-600 hover:border-red-200 ${
+             <button 
+              onClick={logout}
+              className={`p-2.5 rounded-xl border transition-all hover:bg-red-50 hover:text-red-600 hover:border-red-200 ${
                     scrolled 
                       ? "bg-white/5 border-white/10 text-zinc-400" 
                       : "bg-white border-brand-lavender-mid text-brand-muted"
@@ -129,7 +137,9 @@ export default function AdminNavbar() {
               </ul>
 
               <div className="mt-auto pt-8 border-t border-brand-lavender-mid">
-                 <button className="flex items-center gap-3 w-full p-4 rounded-2xl bg-red-50 text-red-600 font-display font-bold hover:bg-red-100 transition-colors">
+                  <button 
+                    onClick={logout}
+                    className="flex items-center gap-3 w-full p-4 rounded-2xl bg-red-50 text-red-600 font-display font-bold hover:bg-red-100 transition-colors">
                     <LogOut className="w-4 h-4" />
                     Sign Out
                   </button>

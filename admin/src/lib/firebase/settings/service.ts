@@ -42,8 +42,15 @@ export const initStoreSettings = async () => {
 };
 
 export const toggleStoreStatus = async (status: boolean) => {
+  console.log(`Setting store status to: ${status}`);
   const ref = doc(db, "settings", "store");
-  await setDoc(ref, { isAcceptingOrders: status }, { merge: true });
+  try {
+    await setDoc(ref, { isAcceptingOrders: status }, { merge: true });
+    console.log(`Successfully set store status to: ${status}`);
+  } catch (error) {
+    console.error(`Failed to set store status to: ${status}:`, error);
+    throw error;
+  }
 };
 
 export const updateOpeningHours = async (hours: StoreSettings['openingHours']) => {

@@ -26,6 +26,8 @@ function makeBeepUrl(freq = 880, durationSec = 0.25, sampleRate = 22050): string
   return "data:audio/wav;base64," + btoa(b);
 }
 
+import { useAuth } from "@/lib/authContext";
+
 interface AlertOrder {
   id: string;
   customerName?: string;
@@ -34,6 +36,7 @@ interface AlertOrder {
 }
 
 export default function GlobalNotification() {
+  const { user } = useAuth();
   const initialLoadRef = useRef(true);
   const previousOrdersRef = useRef<Set<string>>(new Set());
   const ringtoneRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -64,8 +67,10 @@ export default function GlobalNotification() {
     }
   }, [soundEnabled]);
 
-  // Subscribe to orders
+  // Subscribe to orders - only if authenticated
   useEffect(() => {
+    if (!user) return;
+
     const unsubscribe = subscribeToOrders((orders) => {
       const currentIds = new Set(orders.map((o) => o.id));
       if (initialLoadRef.current) {
@@ -83,7 +88,7 @@ export default function GlobalNotification() {
       previousOrdersRef.current = currentIds;
     });
     return () => unsubscribe();
-  }, [soundEnabled]);
+  }, [soundEnabled, user]);
 
   const startRingtone = () => {
     if (ringtoneRef.current) return; // already ringing

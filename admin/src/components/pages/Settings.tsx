@@ -1,7 +1,44 @@
-import React from "react";
-import { Settings, Bell, Shield, Store, Globe, Save } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Settings, Bell, Shield, Store, Globe, Save, Loader2 } from "lucide-react";
+import { listenToStoreSettings, updateOpeningHours, StoreSettings } from "@/lib/firebase/settings/service";
+import { toast } from "sonner";
 
 export default function AdminSettings() {
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const unsub = listenToStoreSettings((data) => {
+      setSettings(data);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleSaveHours = async () => {
+    if (!settings) return;
+    setIsSaving(true);
+    try {
+      await updateOpeningHours(settings.openingHours);
+      toast.success("Operating hours updated successfully");
+    } catch (error) {
+      toast.error("Failed to update operating hours");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!settings) return <div className="p-8"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>;
+
+  const days = [
+    { id: 'mon', label: 'Monday' },
+    { id: 'tue', label: 'Tuesday' },
+    { id: 'wed', label: 'Wednesday' },
+    { id: 'thu', label: 'Thursday' },
+    { id: 'fri', label: 'Friday' },
+    { id: 'sat', label: 'Saturday' },
+    { id: 'sun', label: 'Sunday' },
+  ] as const;
+
   return (
     <div className="max-w-4xl space-y-8 animate-in fade-in duration-700">
       <div>
@@ -52,13 +89,43 @@ export default function AdminSettings() {
             <section className="space-y-6">
               <h3 className="font-display font-bold text-xl text-brand-text border-b border-brand-lavender-mid pb-4">Operating Hours</h3>
               <div className="space-y-4">
-                {["Monday - Thursday", "Friday - Saturday", "Sunday"].map((day) => (
-                  <div key={day} className="flex items-center justify-between gap-4">
-                    <span className="font-body text-sm text-brand-text">{day}</span>
+                {days.map((day) => (
+                  <div key={day.id} className="flex items-center justify-between gap-4">
+                    <span className="font-body text-sm text-brand-text w-24">{day.label}</span>
                     <div className="flex items-center gap-2">
-                      <input type="text" defaultValue="12:00 PM" className="w-24 bg-brand-lavender/20 border border-brand-lavender-mid rounded-lg px-3 py-1.5 text-xs text-center" />
+                      <input 
+                        type="text" 
+                        value={settings.openingHours[day.id].open} 
+                        onChange={(e) => {
+                          const newHours = { ...settings.openingHours };
+                          newHours[day.id] = { ...newHours[day.id], open: e.target.value };
+                          setSettings({ ...settings, openingHours: newHours });
+                        }}
+                        className="w-24 bg-brand-lavender/20 border border-brand-lavender-mid rounded-lg px-3 py-1.5 text-xs text-center" 
+                      />
                       <span className="text-brand-muted">to</span>
-                      <input type="text" defaultValue="10:00 PM" className="w-24 bg-brand-lavender/20 border border-brand-lavender-mid rounded-lg px-3 py-1.5 text-xs text-center" />
+                      <input 
+                        type="text" 
+                        value={settings.openingHours[day.id].close} 
+                        onChange={(e) => {
+                          const newHours = { ...settings.openingHours };
+                          newHours[day.id] = { ...newHours[day.id], close: e.target.value };
+                          setSettings({ ...settings, openingHours: newHours });
+                        }}
+                        className="w-24 bg-brand-lavender/20 border border-brand-lavender-mid rounded-lg px-3 py-1.5 text-xs text-center" 
+                      />
+                      <label className="flex items-center gap-2 ml-4">
+                        <input 
+                          type="checkbox" 
+                          checked={!!settings.openingHours[day.id].closed} 
+                          onChange={(e) => {
+                            const newHours = { ...settings.openingHours };
+                            newHours[day.id] = { ...newHours[day.id], closed: e.target.checked };
+                            setSettings({ ...settings, openingHours: newHours });
+                          }}
+                        />
+                        <span className="text-[10px] uppercase font-bold text-brand-muted">Closed</span>
+                      </label>
                     </div>
                   </div>
                 ))}
@@ -66,8 +133,12 @@ export default function AdminSettings() {
             </section>
 
             <div className="pt-6">
-              <button className="flex items-center gap-2 bg-brand-violet text-white px-8 py-4 rounded-2xl font-display font-bold shadow-violet-glow hover:bg-brand-violet-dark transition-all">
-                <Save className="w-5 h-5" />
+              <button 
+                onClick={handleSaveHours}
+                disabled={isSaving}
+                className="flex items-center gap-2 bg-brand-violet text-white px-8 py-4 rounded-2xl font-display font-bold shadow-violet-glow hover:bg-brand-violet-dark transition-all disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                 Save Changes
               </button>
             </div>

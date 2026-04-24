@@ -22,6 +22,8 @@ import {
   CreditCard,
   ChevronRight
 } from "lucide-react";
+import { doc, updateDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import AddressModal from "@/components/AddressModal";
 
 export default function ProfilePage() {
@@ -47,9 +49,7 @@ export default function ProfilePage() {
     // Save to Firestore
     if (user?.email) {
       try {
-        const { auth, db } = await import("@/lib/firebase/config");
         if (auth.currentUser) {
-          const { doc, updateDoc } = await import("firebase/firestore");
           await updateDoc(doc(db, "users", auth.currentUser.uid), {
             name,
             phone

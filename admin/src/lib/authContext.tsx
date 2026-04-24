@@ -9,8 +9,9 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { auth } from "./firebase";
+import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { toast } from "sonner";
 import { registerAdmin, loginAdmin, logoutUser } from "./firebase";
 
@@ -27,48 +28,87 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  userRole: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * AuthProvider component that wraps the application and provides authentication state.
+ * Handles user session persistence, role fetching, and auth method orchestration.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const { doc, getDoc } = await import("firebase/firestore");
-          const { db } = await import("./firebase");
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-          const userData = userDoc.data();
-          
-          console.log(`Auth: Current user role is: ${userData?.userrole || "client"}`);
-          setUser({
-            email: firebaseUser.email,
-            name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Admin",
-            uid: firebaseUser.uid,
-            role: userData?.userrole || "client"
-          });
-        } catch (error) {
-          console.error("Error fetching user role:", error);
-          setUser({
-            email: firebaseUser.email,
-            name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Admin",
-            uid: firebaseUser.uid,
-            role: "client"
-          });
-        }
-      } else {
-        setUser(null);
+    let isFirstLoad = true;
+
+    // Safety timeout: force hide loading if Firebase hangs
+    const safetyTimeout = setTimeout(() => {
+      if (isFirstLoad) {
+        console.warn("Auth: Safety timeout triggered. Firebase Auth might be hanging.");
+        setIsLoading(false);
+        isFirstLoad = false;
       }
-      setIsLoading(false);
+    }, 5000);
+
+    // Listens for auth state changes (login, logout, token refresh)
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        if (firebaseUser) {
+          // Attempt to fetch user role from Firestore
+          try {
+            const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              setUser({
+                email: firebaseUser.email,
+                name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Admin",
+                uid: firebaseUser.uid,
+                role: userData?.userrole || "client"
+              });
+            } else {
+              setUser({
+                email: firebaseUser.email,
+                name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Admin",
+                uid: firebaseUser.uid,
+                role: "client"
+              });
+            }
+          } catch (firestoreError: any) {
+            console.error("Auth listener Firestore error:", firestoreError.message);
+            // Fallback to basic info if Firestore fails (e.g. database not found)
+            setUser({
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Admin",
+              uid: firebaseUser.uid,
+              role: "client"
+            });
+          }
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Critical error in onAuthStateChanged:", error);
+        setUser(null);
+      } finally {
+        if (isFirstLoad) {
+          setIsLoading(false);
+          isFirstLoad = false;
+        }
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
+  /**
+   * Logs in an admin user.
+   * Calls the firebase service and handles error toast notifications.
+   */
   const login = async (email: string, password: string) => {
     try {
       await loginAdmin(email, password);
@@ -80,6 +120,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * Registers a new admin user.
+   * Creates the auth account and initializes the local user state.
+   */
   const register = async (name: string, email: string, password: string) => {
     try {
       const firebaseUser = await registerAdmin(name, email, password);
@@ -87,7 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser({
         email: firebaseUser.email,
         name: name,
-        uid: firebaseUser.uid
+        uid: firebaseUser.uid,
+        role: "admin"
       });
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -97,8 +142,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * Signs out the current admin.
+   */
   const logout = async () => {
     try {
+      // Clear local state first to prevent background listeners from trying to fetch data
+      setUser(null);
       await logoutUser();
       toast.info("Logged out successfully.");
     } catch (error: any) {
@@ -122,6 +172,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Custom hook to access the AuthContext.
+ * @returns The authentication context value.
+ * @throws Error if used outside of an AuthProvider.
+ */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");

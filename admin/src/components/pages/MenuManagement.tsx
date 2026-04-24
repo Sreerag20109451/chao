@@ -244,7 +244,7 @@ export default function MenuManagement() {
                         >
                           <Checkbox 
                             id={`meat-${meat}`}
-                            checked={editingItem?.availableMeats?.includes(meat)}
+                            checked={!!editingItem?.availableMeats?.includes(meat)}
                             onCheckedChange={() => handleMeatToggle(meat)}
                             className="shrink-0"
                           />
@@ -267,7 +267,7 @@ export default function MenuManagement() {
                         >
                           <Checkbox 
                             id={`side-${sideItem.id}`}
-                            checked={editingItem?.availableSides?.includes(sideItem.name as any)}
+                            checked={!!editingItem?.availableSides?.includes(sideItem.name as any)}
                             onCheckedChange={() => {
                               const current = editingItem?.availableSides || [];
                               const updated = current.includes(sideItem.name as any)
@@ -304,7 +304,7 @@ export default function MenuManagement() {
                     >
                       <Checkbox 
                         id={`allergen-${allergen}`}
-                        checked={editingItem?.allergens?.includes(allergen)}
+                        checked={!!editingItem?.allergens?.includes(allergen)}
                         onCheckedChange={() => {
                           const current = editingItem?.allergens || [];
                           const updated = current.includes(allergen)

@@ -44,6 +44,16 @@ const allergenConfig: Record<
     icon: <Check className="w-3 h-3" />,
     className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50",
   },
+  "Vegan": {
+    label: "Vegan",
+    icon: <Leaf className="w-3 h-3" />,
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50",
+  },
+  "Vegetarian": {
+    label: "Veg",
+    icon: <Leaf className="w-3 h-3" />,
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50",
+  },
 };
 
 interface MenuCardProps {

@@ -28,7 +28,7 @@ export const SIDES: SideType[] = [
   'Rice Noodles'
 ];
 
-export type Allergen = 'Gluten' | 'Dairy/Milk' | 'Nuts' | 'Crustaceans' | 'Soy' | 'Eggs';
+export type Allergen = 'Gluten' | 'Dairy/Milk' | 'Nuts' | 'Crustaceans' | 'Soy' | 'Eggs' | 'Vegan' | 'Vegetarian';
 
 export const ALLERGENS: Allergen[] = [
   'Gluten',
@@ -36,7 +36,9 @@ export const ALLERGENS: Allergen[] = [
   'Nuts',
   'Crustaceans',
   'Soy',
-  'Eggs'
+  'Eggs',
+  'Vegan',
+  'Vegetarian'
 ];
 
 export interface MenuItem {
