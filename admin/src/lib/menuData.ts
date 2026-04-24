@@ -9,10 +9,13 @@ export const CATEGORIES: Category[] = [
   'Curry'
 ];
 
-export type MeatType = 'Chicken' | 'Lamb' | 'Prawn' | 'Beef';
+export type MeatType = 'Tofu' | 'Paneer' | 'Chicken' | 'Duck' | 'Lamb' | 'Prawn' | 'Beef';
 
 export const MEATS: MeatType[] = [
+  'Tofu',
+  'Paneer',
   'Chicken',
+  'Duck',
   'Lamb',
   'Prawn',
   'Beef'

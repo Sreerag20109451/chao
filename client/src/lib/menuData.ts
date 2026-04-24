@@ -9,7 +9,7 @@ export const CATEGORIES: Category[] = [
   'Curry'
 ];
 
-export type MeatType = 'Chicken' | 'Lamb' | 'Prawn' | 'Beef';
+export type MeatType = 'Tofu' | 'Paneer' | 'Chicken' | 'Duck' | 'Lamb' | 'Prawn' | 'Beef';
 export type SideType = 'Jasmine Rice' | 'Egg Fried Rice' | 'Brown Rice' | 'Chips' | 'Rice Noodles';
 export type Allergen = 'Gluten' | 'Dairy/Milk' | 'Nuts' | 'Crustaceans' | 'Soy' | 'Eggs' | 'Vegan' | 'Vegetarian';
 

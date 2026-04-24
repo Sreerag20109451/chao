@@ -157,12 +157,12 @@ export default function MenuCard({ item, deals }: MenuCardProps) {
           <div className="flex flex-col">
             {hasActiveDeal && (
               <span className="text-[10px] text-brand-muted line-through font-bold">
-                £{item.basePrice?.toFixed(2)}
+                €{item.basePrice?.toFixed(2)}
               </span>
             )}
             <span className="font-display font-bold text-amber-accent text-lg flex items-center gap-1">
               {hasActiveDeal && <Tag className="w-3.5 h-3.5 text-brand-violet" />}
-              £{effectivePrice.toFixed(2)}
+              €{effectivePrice.toFixed(2)}
             </span>
           </div>
           

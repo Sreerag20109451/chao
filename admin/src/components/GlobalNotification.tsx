@@ -204,7 +204,7 @@ export default function GlobalNotification() {
                       #{order.id.slice(0, 6).toUpperCase()}
                     </p>
                     <p className="font-body text-xs text-brand-muted">
-                      {order.customerName || "Guest"} · {(order.orderType || "").toUpperCase()} · £{order.total?.toFixed(2) || "0.00"}
+                      {order.customerName || "Guest"} · {(order.orderType || "").toUpperCase()} · €{order.total?.toFixed(2) || "0.00"}
                     </p>
                   </div>
                 </div>

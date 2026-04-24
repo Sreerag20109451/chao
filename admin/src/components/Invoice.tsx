@@ -137,8 +137,8 @@ export default function Invoice({ data, onClose }: InvoiceProps) {
                       )}
                     </td>
                     <td className="py-3 px-4 text-center text-xs">{item.quantity}</td>
-                    <td className="py-3 px-4 text-right text-xs">£{item.price.toFixed(2)}</td>
-                    <td className="py-3 px-4 text-right text-xs font-semibold">£{(item.price * item.quantity).toFixed(2)}</td>
+                    <td className="py-3 px-4 text-right text-xs">€{item.price.toFixed(2)}</td>
+                    <td className="py-3 px-4 text-right text-xs font-semibold">€{(item.price * item.quantity).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -149,23 +149,23 @@ export default function Invoice({ data, onClose }: InvoiceProps) {
               <div className="w-64">
                 <div className="flex justify-between text-xs py-1 text-zinc-600">
                   <span>Subtotal</span>
-                  <span>£{data.subtotal.toFixed(2)}</span>
+                  <span>€{data.subtotal.toFixed(2)}</span>
                 </div>
                 {(data as any).serviceCharge !== undefined && (
                   <div className="flex justify-between text-xs py-1 text-zinc-600">
                     <span>Service Charge</span>
-                    <span>£{((data as any).serviceCharge).toFixed(2)}</span>
+                    <span>€{((data as any).serviceCharge).toFixed(2)}</span>
                   </div>
                 )}
                 {data.orderType === "delivery" && (
                   <div className="flex justify-between text-xs py-1 text-zinc-600">
                     <span>Delivery</span>
-                    <span>£{data.deliveryCharge.toFixed(2)}</span>
+                    <span>€{data.deliveryCharge.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="border-t-2 border-zinc-900 mt-2 pt-2 flex justify-between">
                   <span className="text-sm font-black uppercase tracking-tight">Total Amount</span>
-                  <span className="text-sm font-black">£{data.total.toFixed(2)}</span>
+                  <span className="text-sm font-black">€{data.total.toFixed(2)}</span>
                 </div>
               </div>
             </div>

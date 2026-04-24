@@ -67,13 +67,13 @@ export default function DashboardPage() {
   const stats = [
     {
       title: "Today's Revenue",
-      value: `£${todaysRevenue.toFixed(2)}`,
+      value: `€${todaysRevenue.toFixed(2)}`,
       change: `${activeTodaysOrders.length} active orders`,
       icon: <DollarSign className="w-4 h-4 text-brand-violet" />,
     },
     {
       title: "Weekly Revenue",
-      value: `£${weeklyRevenue.toFixed(2)}`,
+      value: `€${weeklyRevenue.toFixed(2)}`,
       change: `${weeklyOrders.length} orders this week`,
       icon: <TrendingUp className="w-4 h-4 text-brand-violet" />,
     },
@@ -186,7 +186,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="text-right flex flex-col items-end">
-                          <span className="font-display font-bold text-brand-text">£{order.total?.toFixed(2)}</span>
+                          <span className="font-display font-bold text-brand-text">€{order.total?.toFixed(2)}</span>
                           <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                             order.status === "cancelled" ? "bg-red-50 text-red-600" : (order.status === "pending" || order.status === "preparing" ? "bg-brand-violet/10 text-brand-violet" : "bg-emerald-50 text-emerald-600")
                           }`}>

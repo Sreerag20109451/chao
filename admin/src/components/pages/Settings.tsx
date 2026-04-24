@@ -82,6 +82,56 @@ export default function AdminSettings() {
         </section>
 
         <section className="space-y-6">
+          <h3 className="font-display font-bold text-xl text-brand-text border-b border-brand-lavender-mid pb-4">Meat Options</h3>
+          <div className="space-y-4">
+            {["Tofu", "Paneer", "Chicken", "Duck", "Lamb", "Prawn", "Beef"].map((meatName) => {
+              const option = settings.meatOptions?.[meatName] || { price: 0, available: true };
+              return (
+                <div key={meatName} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-brand-lavender/5 p-4 rounded-xl border border-brand-lavender-mid">
+                  <span className="font-display font-bold text-brand-text w-24">{meatName}</span>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-brand-muted font-bold uppercase tracking-widest">Extra Price (€)</span>
+                      <input 
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={option.price}
+                        onChange={(e) => {
+                          const newMeatOptions = { ...settings.meatOptions };
+                          newMeatOptions[meatName] = { ...option, price: parseFloat(e.target.value) || 0 };
+                          setSettings({ ...settings, meatOptions: newMeatOptions });
+                        }}
+                        className="w-20 bg-white border border-brand-lavender-mid rounded-lg px-3 py-1.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/20"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <div className="relative">
+                        <input 
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={option.available}
+                          onChange={(e) => {
+                            const newMeatOptions = { ...settings.meatOptions };
+                            newMeatOptions[meatName] = { ...option, available: e.target.checked };
+                            setSettings({ ...settings, meatOptions: newMeatOptions });
+                          }}
+                        />
+                        <div className="w-11 h-6 bg-brand-lavender-mid peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-violet/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-widest text-brand-muted w-20">
+                        {option.available ? "Available" : "Unavailable"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+
+        <section className="space-y-6">
           <h3 className="font-display font-bold text-xl text-brand-text border-b border-brand-lavender-mid pb-4">Operating Hours</h3>
           <div className="space-y-4">
             {days.map((day) => (

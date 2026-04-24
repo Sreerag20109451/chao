@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import Invoice, { InvoiceData } from "../Invoice";
 import { getMenuItems, listenToMenu } from "@/lib/firebase/menu/service";
 import { listenToDealsAdmin } from "@/lib/firebase/deals/service";
+import { listenToStoreSettings, StoreSettings } from "@/lib/firebase/settings/service";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { collection, addDoc, serverTimestamp, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -23,6 +24,7 @@ const CUSTOMISABLE_CATEGORIES: Category[] = ["Main Course", "Curry"];
 export default function Billing() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [activeDeals, setActiveDeals] = useState<Deal[]>([]);
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -53,9 +55,14 @@ export default function Billing() {
       setActiveDeals(active);
     });
 
+    const unsubSettings = listenToStoreSettings((data) => {
+      setSettings(data);
+    });
+
     return () => {
       unsubMenu();
       unsubDeals();
+      unsubSettings();
     };
   }, []);
 
@@ -72,6 +79,19 @@ export default function Billing() {
     return Number(item.basePrice) || 0;
   };
 
+  const getMeatIncrement = (meat?: string) => {
+    if (!meat || !settings?.meatOptions?.[meat]) return 0;
+    return settings.meatOptions[meat].price;
+  };
+
+  const getAvailableMeats = (meats: string[]) => {
+    if (!meats) return [];
+    return meats.filter(meat => {
+      const meatOption = settings?.meatOptions?.[meat];
+      return meatOption?.available !== false;
+    });
+  };
+
   const filteredItems = menuItems.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -79,13 +99,14 @@ export default function Billing() {
 
   const handleItemClick = (item: MenuItem) => {
     try {
-      const hasMeats = item.availableMeats?.length > 0;
+      const availableMeats = getAvailableMeats(item.availableMeats || []);
+      const hasMeats = availableMeats.length > 0;
       const hasSides = item.availableSides?.length > 0;
       const isCustomizable = item.category && CUSTOMISABLE_CATEGORIES.includes(item.category);
 
       if (isCustomizable && (hasMeats || hasSides)) {
         setCustomizingItem(item);
-        setTempMeat(hasMeats ? item.availableMeats[0] : "");
+        setTempMeat(hasMeats ? availableMeats[0] : "");
         setTempSide(hasSides ? item.availableSides[0] : "");
       } else {
         addToOrder(item);
@@ -108,12 +129,6 @@ export default function Billing() {
       console.error("confirmCustomization error:", e);
       toast.error(`Error confirming customization: ${e.message}`);
     }
-  };
-
-  const getMeatIncrement = (meat?: string) => {
-    if (meat === 'Lamb') return 1;
-    if (meat === 'Prawn' || meat === 'Beef') return 2;
-    return 0;
   };
 
   const addToOrder = (item: MenuItem, meat?: string, side?: string) => {
@@ -339,7 +354,7 @@ export default function Billing() {
                           {[item.selectedMeat, item.selectedSide].filter(Boolean).join(" • ")}
                         </p>
                       )}
-                      <p className="text-xs font-bold text-white/80 mt-1">£{(item.basePrice * item.quantity).toFixed(2)}</p>
+                      <p className="text-xs font-bold text-white/80 mt-1">€{(item.basePrice * item.quantity).toFixed(2)}</p>
                     </div>
                     <div className="flex items-center gap-3 bg-white/10 px-3 py-1.5 rounded-xl border border-white/5">
                       <button onClick={() => updateQuantity(uniqueKey, -1)} className="hover:text-amber-400 transition-colors">
@@ -384,7 +399,7 @@ export default function Billing() {
                   <div className="flex items-center justify-between gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
                     <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest">Delivery Charge</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-white/40">£</span>
+                      <span className="text-xs text-white/40">€</span>
                       <input
                         type="number"
                         min="0"
@@ -420,11 +435,11 @@ export default function Billing() {
           <div className="space-y-3">
             <div className="flex justify-between text-xs font-body text-white/60">
               <span>Subtotal</span>
-              <span>£{subtotal.toFixed(2)}</span>
+              <span>€{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-xl font-display font-bold pt-3 border-t border-white/10">
               <span>Total</span>
-              <span>£{total.toFixed(2)}</span>
+              <span>€{total.toFixed(2)}</span>
             </div>
           </div>
 
@@ -504,7 +519,7 @@ export default function Billing() {
               <div className="space-y-3">
                 <label className="text-xs font-bold text-brand-muted uppercase tracking-wider">Select Meat</label>
                 <div className="flex flex-wrap gap-2">
-                  {customizingItem.availableMeats.map(meat => (
+                  {getAvailableMeats(customizingItem.availableMeats).map(meat => (
                     <button
                       key={meat}
                       onClick={() => setTempMeat(meat)}
@@ -515,7 +530,7 @@ export default function Billing() {
                       }`}
                     >
                       {meat}
-                      {getMeatIncrement(meat) > 0 && <span className="opacity-70 text-[10px] ml-1">(+£{getMeatIncrement(meat).toFixed(2)})</span>}
+                      {getMeatIncrement(meat) > 0 && <span className="opacity-70 text-[10px] ml-1">(+€{getMeatIncrement(meat).toFixed(2)})</span>}
                     </button>
                   ))}
                 </div>

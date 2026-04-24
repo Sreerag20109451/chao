@@ -7,6 +7,11 @@ export interface OpeningTime {
   closed: boolean;
 }
 
+export interface MeatOption {
+  price: number;
+  available: boolean;
+}
+
 export interface StoreSettings {
   isAcceptingOrders: boolean;
   storeName: string;
@@ -21,6 +26,7 @@ export interface StoreSettings {
     sun: OpeningTime;
   };
   minPrepTime: number;
+  meatOptions: Record<string, MeatOption>;
 }
 
 const DEFAULT_SETTINGS: StoreSettings = {
@@ -37,6 +43,15 @@ const DEFAULT_SETTINGS: StoreSettings = {
     sun: { open: "12:00", close: "22:00", closed: false },
   },
   minPrepTime: 20,
+  meatOptions: {
+    "Tofu": { price: 0, available: true },
+    "Paneer": { price: 0, available: true },
+    "Chicken": { price: 0, available: true },
+    "Duck": { price: 1, available: true },
+    "Lamb": { price: 2, available: true },
+    "Prawn": { price: 3, available: true },
+    "Beef": { price: 4, available: true },
+  },
 };
 
 export const listenToStoreSettings = (cb: (settings: StoreSettings) => void) => {

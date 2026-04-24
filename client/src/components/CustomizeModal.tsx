@@ -26,18 +26,28 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
   const dispatch = useDispatch();
   const router = useRouter();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { isOpen: isStoreOpen } = useStoreStatus();
+  const { isOpen: isStoreOpen, settings } = useStoreStatus();
   const [selectedProtein, setSelectedProtein] = useState(item.availableMeats?.[0] || "");
   const [selectedSide, setSelectedSide] = useState(item.availableSides?.[0] || "");
   const [isOpen, setIsOpen] = useState(false);
 
   const getMeatIncrement = (meat: string) => {
-    if (meat === 'Lamb') return 1;
-    if (meat === 'Prawn' || meat === 'Beef') return 2;
-    return 0;
+    if (!settings?.meatOptions?.[meat]) return 0;
+    return settings.meatOptions[meat].price;
   };
 
-  const finalPrice = (item.basePrice || 0) + (item.availableMeats?.length ? getMeatIncrement(selectedProtein) : 0);
+  const getAvailableMeats = () => {
+    if (!item.availableMeats) return [];
+    return item.availableMeats.filter(meat => {
+      const meatOption = settings?.meatOptions?.[meat];
+      return meatOption?.available !== false;
+    });
+  };
+
+  const availableMeats = getAvailableMeats();
+  const effectiveSelectedProtein = availableMeats.includes(selectedProtein) ? selectedProtein : (availableMeats[0] || "");
+  
+  const finalPrice = (item.basePrice || 0) + (item.availableMeats?.length ? getMeatIncrement(effectiveSelectedProtein) : 0);
 
   const handleAddToCart = () => {
     if (!isStoreOpen) {
@@ -52,7 +62,7 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
     dispatch(addToCart({
       ...serializableItem,
       basePrice: finalPrice,
-      selectedProtein: item.availableMeats?.length ? selectedProtein : undefined,
+      selectedProtein: item.availableMeats?.length ? effectiveSelectedProtein : undefined,
       selectedSide: item.availableSides?.length ? selectedSide : undefined,
     }));
     toast.success(`Added ${item.name} to cart`);
@@ -83,21 +93,21 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
                 <span className="text-[10px] text-brand-violet bg-brand-violet/5 px-2 py-0.5 rounded-full">Required</span>
               </label>
               <div className="grid grid-cols-2 gap-3">
-                {item.availableMeats.map((protein) => (
+                {availableMeats.map((protein) => (
                   <button
                     key={protein}
                     onClick={() => setSelectedProtein(protein)}
                     className={`flex items-center justify-between px-4 py-3 rounded-xl border font-body text-sm transition-all ${
-                      selectedProtein === protein
+                      effectiveSelectedProtein === protein
                         ? "bg-brand-violet border-brand-violet text-white shadow-violet-glow scale-[1.02]"
                         : "bg-brand-lavender/30 border-brand-lavender-mid text-brand-text hover:border-brand-violet/40"
                     }`}
                   >
                     <span>
                       {protein}
-                      {getMeatIncrement(protein) > 0 && <span className="opacity-70 text-[10px] ml-1">(+£{getMeatIncrement(protein)})</span>}
+                      {getMeatIncrement(protein) > 0 && <span className="opacity-70 text-[10px] ml-1">(+€{getMeatIncrement(protein).toFixed(2)})</span>}
                     </span>
-                    {selectedProtein === protein && <Check className="w-4 h-4" />}
+                    {effectiveSelectedProtein === protein && <Check className="w-4 h-4" />}
                   </button>
                 ))}
               </div>
@@ -136,7 +146,7 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
             className="w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-2xl py-4 shadow-violet-glow transition-all flex items-center justify-center gap-2 group active:scale-95"
           >
             <ShoppingCart className="w-5 h-5 transition-transform group-hover:-translate-y-0.5" />
-            Add to Basket — £{finalPrice.toFixed(2)}
+            Add to Basket — €{finalPrice.toFixed(2)}
           </button>
         </DialogFooter>
       </DialogContent>
