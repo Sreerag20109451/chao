@@ -213,3 +213,15 @@
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes typewriter-caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.typewriter-caret {
+  display: inline-block;
+  margin-left: 0.15em;
+  color: hsl(42 90% 58%);
+  animation: typewriter-caret-blink 1s step-end infinite;
+}

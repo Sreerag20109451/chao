@@ -109,7 +109,7 @@ export default function AdminOrders() {
                       </td>
 
                       <td className="px-6 py-4 font-display font-bold text-brand-text text-lg">
-                        £{order.total?.toFixed(2) || "0.00"}
+                        €{order.total?.toFixed(2) || "0.00"}
                       </td>
 
                       {/* Show payment method in the main table so ops can act quickly. */}

@@ -58,8 +58,8 @@ export default function Navbar() {
     <nav
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-zinc-950 border-b border-white/10 shadow-2xl py-3"
-          : "bg-transparent border-b border-transparent py-6"
+          ? "bg-zinc-950 border-b border-white/10 shadow-2xl py-1"
+          : "bg-transparent border-b border-transparent py-2"
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
@@ -67,22 +67,17 @@ export default function Navbar() {
         <div className="flex-1 flex justify-start">
           <Link
             href="/"
-            className="flex items-center gap-3 transition-transform hover:scale-105 active:scale-95"
+            className="flex items-center transition-transform hover:scale-105 active:scale-95"
           >
-            <div className={`relative w-10 h-10 rounded-xl overflow-hidden shadow-sm transition-all ${scrolled ? "bg-white/10" : "bg-white shadow-violet-glow/20"}`}>
+            <div className="relative w-28 h-28 rounded-xl overflow-hidden transition-all bg-transparent border border-transparent shadow-none">
               <Image 
-                src="/logo.png" 
+                src="/pnglogo.png"
                 alt="Chao Logo" 
                 fill 
-                sizes="40px"
-                className="object-contain p-1"
+                sizes="112px"
+                className="object-cover"
               />
             </div>
-            <span className={`font-display font-bold text-2xl transition-colors ${
-              scrolled ? "text-white" : "text-brand-text"
-            }`}>
-              Chao
-            </span>
           </Link>
         </div>
 
@@ -166,9 +161,6 @@ export default function Navbar() {
                   href="/login"
                   className="inline-flex items-center justify-center gap-2 bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-semibold rounded-full px-5 py-2 text-sm shadow-violet-glow transition-all duration-200 group"
                 >
-                  <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center overflow-hidden p-0.5 group-hover:scale-110 transition-transform">
-                    <Image src="/logo.png" alt="" width={16} height={16} sizes="16px" className="object-contain" />
-                  </div>
                   Login
                 </Link>
               )
@@ -187,11 +179,10 @@ export default function Navbar() {
 
             <SheetContent side="right" className="w-72 bg-brand-lavender border-l border-border">
               <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white shadow-sm border border-brand-lavender-mid">
-                    <Image src="/logo.png" alt="Chao Logo" fill sizes="32px" className="object-contain p-1" />
+                <div className="flex items-center">
+                  <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-transparent shadow-none border border-transparent">
+                    <Image src="/pnglogo.png" alt="Chao Logo" fill sizes="96px" className="object-cover" />
                   </div>
-                  <span className="font-display font-bold text-xl text-brand-text">Chao</span>
                 </div>
                 <button
                   className="inline-flex items-center justify-center p-2 text-brand-text hover:bg-brand-lavender-mid rounded-lg transition-colors"
@@ -272,9 +263,6 @@ export default function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="inline-flex items-center justify-center gap-3 w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-semibold rounded-full py-4 shadow-violet-glow group"
                     >
-                      <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden p-1 group-active:scale-95 transition-transform">
-                        <Image src="/logo.png" alt="" width={20} height={20} sizes="20px" className="object-contain" />
-                      </div>
                       Login to Your Account
                     </Link>
                   </div>

@@ -82,13 +82,13 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm p-1 group-hover:scale-105 transition-transform">
+            <div className="w-28 h-28 rounded-xl bg-transparent flex items-center justify-center shadow-none group-hover:scale-105 transition-transform overflow-hidden">
               <Image 
-                src="/logo.png" 
+                src="/pnglogo.png"
                 alt="Chao Logo" 
-                width={28} 
-                height={28} 
-                className="object-contain"
+                width={80} 
+                height={80} 
+                className="object-cover"
               />
             </div>
             <span className="font-display font-bold text-xl text-white tracking-wide">Chao Admin</span>

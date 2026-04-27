@@ -30,13 +30,13 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 md:px-16 py-6">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm p-1">
+          <div className="w-28 h-28 rounded-xl bg-transparent flex items-center justify-center shadow-none overflow-hidden">
             <Image 
-              src="/logo.png" 
+              src="/pnglogo.png"
               alt="Chao Logo" 
-              width={24} 
-              height={24} 
-              className="object-contain"
+              width={80} 
+              height={80} 
+              className="object-cover"
             />
           </div>
           <span className="font-display font-bold text-xl tracking-wide">Chao Admin</span>

@@ -177,7 +177,7 @@ export default function OrdersPage() {
                     </div>
                   </div>
                   <div className="flex flex-col md:items-end gap-2">
-                    <span className="font-display font-bold text-brand-text text-2xl">£{order.total.toFixed(2)}</span>
+                    <span className="font-display font-bold text-brand-text text-2xl">€{order.total.toFixed(2)}</span>
                     <button
                       type="button"
                       onClick={() => toggleOrderDetails(order.id)}

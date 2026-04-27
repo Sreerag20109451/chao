@@ -49,7 +49,7 @@ export default function PaymentsPage() {
               </div>
               <h3 className="font-display font-bold text-lg text-brand-text">Card Payment</h3>
               <p className="font-body text-brand-muted text-sm mt-1">
-                Secure card payment is powered by Stripe Checkout. You will be redirected to Stripe to complete payment.
+                Secure card payment is powered by Stripe Checkout. Saved cards are securely vaulted by Stripe for faster repeat checkout.
               </p>
               <Link href="/cart" className="mt-4 inline-flex items-center gap-2 text-brand-violet font-display font-bold text-xs uppercase tracking-wider">
                 Go to checkout <ArrowRight className="w-4 h-4" />

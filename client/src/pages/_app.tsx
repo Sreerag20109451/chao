@@ -4,6 +4,7 @@ import "@/styles/globals.css";
 import { ReduxProvider } from "@/components/ReduxProvider";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SplashScreen from "@/components/SplashScreen";
 import Head from "next/head";
 import FirebaseAuthHandler from "@/components/FirebaseAuthHandler";
 import { Toaster } from "sonner";
@@ -31,6 +32,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <ReduxProvider>
       <Toaster position="top-center" expand={true} richColors />
       <FirebaseAuthHandler />
+      <SplashScreen />
       <div className={`${baiJamjuree.variable} ${notoSerifThai.variable} ${sarabun.variable} min-h-screen flex flex-col antialiased bg-lavender-gradient`}>
         <Head>
           <title>Chao | Waterford's Finest Authentic Thai Restaurant & Takeaway</title>

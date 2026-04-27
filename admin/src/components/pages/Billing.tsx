@@ -262,7 +262,8 @@ export default function Billing() {
     deliveryCharge: effectiveDeliveryCharge,
     total,
     date: new Date().toLocaleDateString(),
-    time: new Date().toLocaleTimeString()
+    time: new Date().toLocaleTimeString(),
+    paymentMethod: "cod",
   };
 
   const [completedOrder, setCompletedOrder] = useState<InvoiceData | null>(null);
@@ -354,9 +355,9 @@ export default function Billing() {
                         <span className="text-[10px] font-bold text-brand-muted uppercase tracking-widest mt-1 block">{item.category}</span>
                         <span className="mt-1.5 flex items-baseline gap-2">
                           {deal && (
-                            <span className="text-[10px] text-brand-muted line-through font-bold">£{item.basePrice.toFixed(2)}</span>
+                            <span className="text-[10px] text-brand-muted line-through font-bold">€{item.basePrice.toFixed(2)}</span>
                           )}
-                          <span className="font-display font-bold text-brand-violet text-sm">£{price.toFixed(2)}</span>
+                          <span className="font-display font-bold text-brand-violet text-sm">€{price.toFixed(2)}</span>
                         </span>
                       </span>
                     </button>
@@ -532,6 +533,8 @@ export default function Billing() {
                   address: orderType === "delivery" ? (address || null) : null,
                   customerPhone: orderType === "delivery" ? (deliveryPhone || null) : null,
                   customerName: "Counter Sale (POS)",
+                  paymentMethod: "cod",
+                  paymentStatus: "paid_cod",
                   status: "preparing",
                   source: "pos",
                   createdAt: serverTimestamp(),

@@ -26,6 +26,7 @@ export interface InvoiceData {
   total: number;
   date: string;
   time: string;
+  paymentMethod?: "card" | "cod" | string;
   driverName?: string;
   driverPhone?: string;
 }
@@ -94,6 +95,16 @@ export default function Invoice({ data, onClose }: InvoiceProps) {
               <div>
                 <p className="text-[10px] font-bold uppercase text-zinc-400 tracking-widest mb-2">Service Type</p>
                 <p className="text-sm font-bold uppercase mb-2">{data.orderType}</p>
+                <p className="text-xs text-zinc-600 mb-2">
+                  Payment:{" "}
+                  <span className="font-semibold text-zinc-800">
+                    {data.paymentMethod === "card"
+                      ? "Card"
+                      : data.paymentMethod === "cod"
+                      ? "Cash on Delivery"
+                      : data.paymentMethod || "Not set"}
+                  </span>
+                </p>
                 {data.orderType === "delivery" && data.driverName && (
                   <div className="text-xs text-zinc-600 space-y-0.5">
                     <p>Driver: <span className="font-semibold text-zinc-800">{data.driverName}</span></p>

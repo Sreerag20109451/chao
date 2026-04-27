@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import MenuCard from "@/components/MenuCard";
+import TypewriterText from "@/components/TypewriterText";
 import { categories, MenuItem, Deal } from "@/lib/menuData";
 import { listenToMenu } from "@/lib/firebase/menu/service";
 import { listenToDeals } from "@/lib/firebase/deals/service";
@@ -111,8 +112,15 @@ export default function MenuPage() {
           <div className="pill-badge mx-auto mb-6 w-fit uppercase tracking-[0.1em]">
             <Utensils className="w-3.5 h-3.5 text-brand-amber" /> Our Menu
           </div>
-          <h1 className="font-display font-bold text-brand-text text-5xl md:text-6xl tracking-tight mb-4">
-            Taste the <span className="text-brand-violet">Exquisite</span>.
+          <h1 className="font-display font-bold text-brand-text text-5xl md:text-6xl tracking-tight mb-4 min-h-[4rem] md:min-h-[4.75rem]">
+            <TypewriterText
+              speedMs={36}
+              segments={[
+                { text: "Taste the " },
+                { text: "Exquisite", className: "text-brand-violet" },
+                { text: "." },
+              ]}
+            />
           </h1>
           <p className="font-body text-brand-muted text-lg max-w-2xl mx-auto">
             From fragrant starters to indulgent desserts — everything crafted fresh, every day.

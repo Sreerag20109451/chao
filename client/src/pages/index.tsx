@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import MenuCard from "@/components/MenuCard";
+import TypewriterText from "@/components/TypewriterText";
 import { MenuItem, Deal } from "@/lib/menuData";
 import { listenToMenu } from "@/lib/firebase/menu/service";
 import { listenToDeals } from "@/lib/firebase/deals/service";
@@ -199,8 +200,14 @@ function LoggedInHome({ user }: { user: any }) {
               <Sparkles className="w-3.5 h-3.5 text-brand-amber" />
               Welcome back, {user?.name.split(' ')[0]}
             </div>
-            <h1 className="font-display font-bold text-brand-text text-4xl md:text-5xl tracking-tight mb-4">
-              What are we <span className="text-brand-violet">eating today?</span>
+            <h1 className="font-display font-bold text-brand-text text-4xl md:text-5xl tracking-tight mb-4 min-h-[3.25rem] md:min-h-[3.75rem]">
+              <TypewriterText
+                speedMs={38}
+                segments={[
+                  { text: "What are we " },
+                  { text: "having today?", className: "text-brand-violet" },
+                ]}
+              />
             </h1>
 
             <div className="inline-flex p-1 bg-white border border-brand-lavender-mid rounded-2xl shadow-sm">
@@ -347,8 +354,19 @@ export default function Home() {
               <p className="text-xs md:text-sm font-body text-red-500 mt-1">Please check back during our opening hours to place an order.</p>
             </div>
           )}
-          <h1 className="font-display font-bold text-brand-text text-5xl sm:text-6xl md:text-7xl tracking-tight mb-6 animate-in fade-in slide-in-from-top-10 duration-1000">
-            Waterford's Finest <span className="text-brand-violet">Authentic Thai</span>.
+          <div className="mb-0 flex justify-center animate-in fade-in slide-in-from-top-10 duration-1000">
+            <div className="relative w-48 h-48 rounded-2xl overflow-hidden bg-transparent border border-transparent shadow-none">
+              <Image
+                src="/pnglogo.png"
+                alt="Chao Logo"
+                fill
+                sizes="192px"
+                className="object-cover"
+              />
+            </div>
+          </div>
+          <h1 className="font-display font-bold text-brand-text text-5xl sm:text-6xl md:text-7xl tracking-tight mb-6 -mt-2 animate-in fade-in slide-in-from-top-10 duration-1000">
+            Waterford&apos;s Finest <span className="text-brand-violet">Authentic Thai</span>.
           </h1>
           <p className="font-body text-brand-muted text-lg md:text-xl max-w-2xl mx-auto mb-10 animate-in fade-in slide-in-from-top-8 duration-1000 delay-200 fill-mode-both">
             Traditionally crafted Thai cuisine, made fresh daily with premium ingredients. Experience the heart of Thailand with Waterford's top-rated Thai takeaway and restaurant.

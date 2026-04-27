@@ -85,6 +85,7 @@ export const buildInvoiceData = (order: AdminOrder, activeDriver: string | null)
         hour: "2-digit",
         minute: "2-digit",
       }) || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    paymentMethod: order.paymentMethod || undefined,
     driverName: order.orderType === "delivery" ? activeDriver || undefined : undefined,
   };
 };

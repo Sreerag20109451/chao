@@ -161,7 +161,7 @@ export default function DealsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Deal Price (£)</Label>
+                  <Label>Deal Price (€)</Label>
                   <Input 
                     type="number"
                     step="0.01"
@@ -237,7 +237,7 @@ export default function DealsPage() {
                           {item.name}
                         </span>
                         <span className="text-[10px] font-bold text-brand-muted uppercase tracking-widest">
-                          £{item.basePrice.toFixed(2)} • {item.category}
+                          €{item.basePrice.toFixed(2)} • {item.category}
                         </span>
                       </div>
                     </label>
@@ -304,7 +304,7 @@ export default function DealsPage() {
               <div className="bg-brand-lavender/30 rounded-2xl p-4 flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-brand-muted uppercase tracking-widest">Deal Price</p>
-                  <p className="text-2xl font-display font-bold text-brand-violet">£{deal.dealPrice.toFixed(2)}</p>
+                  <p className="text-2xl font-display font-bold text-brand-violet">€{deal.dealPrice.toFixed(2)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-bold text-brand-muted uppercase tracking-widest">Items</p>

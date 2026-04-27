@@ -3,16 +3,17 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import Image from "next/image";
-import { Menu, X, LayoutDashboard, Utensils, ShoppingBag, Settings, LogOut, User, Receipt, Tag, Bike } from "lucide-react";
+import { Menu, X, LayoutDashboard, Utensils, ShoppingBag, Settings, LogOut, User, Receipt, Tag, Bike, MessageSquare } from "lucide-react";
 
 import { useAuth } from "@/lib/authContext";
+import { subscribeToMessages } from "@/lib/firebase/messages/service";
 
 const navLinks = [
   { href: "/",         label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
   { href: "/billing",  label: "Billing/POS", icon: <Receipt className="w-4 h-4" /> },
   { href: "/menu",     label: "Menu",      icon: <Utensils className="w-4 h-4" /> },
   { href: "/deals",    label: "Deals",     icon: <Tag className="w-4 h-4" /> },
+  { href: "/messages", label: "Messages",  icon: <MessageSquare className="w-4 h-4" /> },
   { href: "/orders",   label: "Orders",    icon: <ShoppingBag className="w-4 h-4" /> },
   { href: "/drivers",  label: "Drivers",   icon: <Bike className="w-4 h-4" /> },
   { href: "/settings", label: "Settings",  icon: <Settings className="w-4 h-4" /> },
@@ -23,6 +24,7 @@ export default function AdminNavbar() {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +37,19 @@ export default function AdminNavbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToMessages(
+      (rows) => {
+        setUnreadCount(rows.filter((msg) => !msg.read).length);
+      },
+      () => {
+        // Keep nav stable even if message permissions are not yet deployed.
+        setUnreadCount(0);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
   return (
     <nav
       className={`sticky top-0 inset-x-0 z-50 transition-all duration-300 ${
@@ -45,26 +60,7 @@ export default function AdminNavbar() {
     >
       <div className="w-full px-4 sm:px-6 md:px-8 flex items-center justify-between">
         {/* ---- Brand / Logo (Mobile Only) ---- */}
-        <div className="flex-1 flex justify-start md:hidden">
-          <Link
-            to="/"
-            className="flex items-center gap-3 transition-transform hover:scale-105 active:scale-95"
-          >
-            <div className={`relative w-8 h-8 rounded-lg overflow-hidden shadow-sm transition-all bg-white ${scrolled ? "bg-white/10" : "border border-brand-lavender-mid"}`}>
-              <Image 
-                src="/logo.png" 
-                alt="Chao Logo" 
-                fill
-                className="object-contain p-1"
-              />
-            </div>
-            <span className={`font-display font-bold text-lg transition-colors ${
-              scrolled ? "text-white" : "text-brand-text"
-            }`}>
-              Chao <span className="text-brand-violet">Admin</span>
-            </span>
-          </Link>
-        </div>
+        <div className="flex-1 md:hidden" />
 
         {/* Links are now in Sidebar for Desktop */}
 
@@ -109,12 +105,7 @@ export default function AdminNavbar() {
 
             <SheetContent side="right" className="w-72 bg-brand-lavender border-l border-border p-6">
               <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white shadow-sm border border-brand-lavender-mid">
-                    <Image src="/logo.png" alt="Chao Logo" fill className="object-contain p-1" />
-                  </div>
-                  <span className="font-display font-bold text-xl text-brand-text">Chao Admin</span>
-                </div>
+                <p className="font-display font-bold text-sm uppercase tracking-wider text-brand-muted">Navigation</p>
               </div>
 
               <ul className="flex flex-col gap-2">
@@ -123,14 +114,21 @@ export default function AdminNavbar() {
                     <Link
                       to={href}
                       onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-display font-medium transition-colors ${
+                      className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-display font-medium transition-colors ${
                         location.pathname === href
                           ? "bg-brand-violet text-white shadow-violet-glow"
                           : "text-brand-text hover:bg-brand-lavender-mid"
                       }`}
                     >
-                      {icon}
-                      {label}
+                      <span className="flex items-center gap-3">
+                        {icon}
+                        {label}
+                      </span>
+                      {href === "/messages" && unreadCount > 0 && (
+                        <span className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black inline-flex items-center justify-center">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 ))}

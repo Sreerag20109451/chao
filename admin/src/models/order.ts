@@ -32,6 +32,8 @@ export interface AdminOrder {
   subtotal?: number;
   deliveryCharge?: number;
   requestedPickupTime?: number;
+  paymentMethod?: "card" | "cod" | string;
+  paymentStatus?: string;
   createdAt?: FirestoreTimestampLike | Date | string | number | null;
   items?: OrderItem[];
 }

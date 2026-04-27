@@ -40,10 +40,10 @@ export default function Footer() {
       >
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* ---- Column 1: Brand ---- */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm overflow-hidden border border-brand-lavender-mid p-1.5">
-                <Image src="/logo.png" alt="Chao Logo" width={32} height={32} sizes="32px" className="object-contain" />
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <div className="w-16 h-16 bg-transparent rounded-xl flex items-center justify-center shadow-none overflow-hidden border border-transparent">
+                <Image src="/pnglogo.png" alt="Chao Logo" width={64} height={64} sizes="64px" className="object-cover" />
               </div>
               <span className="font-display font-bold text-2xl text-brand-text tracking-tight">Chao</span>
             </div>

@@ -56,13 +56,20 @@ export default function CartPage() {
     (acc, item) => acc + (item.basePrice || 0) * item.quantity, 
     0
   );
+  // Enforce restaurant minimum order policy on food/service value only.
+  // Delivery fee must NOT count towards the minimum.
+  const MIN_ORDER_TOTAL = 10;
   const serviceCharge = subtotal * 0.05;
   const deliveryFee = orderType === "collection" ? 0 : (subtotal > 30 ? 0 : 3.0);
   const total = subtotal + serviceCharge + deliveryFee;
+  const minimumEligibleAmount = subtotal + serviceCharge;
 
   const currentAddress = user?.addresses[user?.primaryAddressIndex || 0];
   const isCheckoutDisabled =
-    !isStoreOpen || !phone.trim() || (orderType === "delivery" && !currentAddress);
+    !isStoreOpen ||
+    !phone.trim() ||
+    (orderType === "delivery" && !currentAddress) ||
+    minimumEligibleAmount < MIN_ORDER_TOTAL;
 
   useEffect(() => {
     if (user?.phone && !phone) setPhone(user.phone);
@@ -107,6 +114,7 @@ export default function CartPage() {
           deliveryFee,
           serviceCharge,
           customerName: user?.name || "Guest",
+          customerEmail: user?.email || null,
           customerPhone: (phone ?? user?.phone) || null,
           address: orderType === "delivery" ? currentAddress ?? null : null,
         }),
@@ -373,7 +381,7 @@ export default function CartPage() {
                           </p>
                         </div>
                         <span className="font-display font-bold text-brand-text text-lg whitespace-nowrap">
-                          £{((item.basePrice || 0) * item.quantity).toFixed(2)}
+                          €{((item.basePrice || 0) * item.quantity).toFixed(2)}
                         </span>
                       </div>
                       <div className="mt-4 flex items-center justify-between">
@@ -440,21 +448,21 @@ export default function CartPage() {
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between text-brand-muted font-body">
                   <span>Subtotal</span>
-                  <span className="font-semibold text-brand-text">£{subtotal.toFixed(2)}</span>
+                  <span className="font-semibold text-brand-text">€{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-brand-muted font-body">
                   <span>Service Charge (5%)</span>
-                  <span className="font-semibold text-brand-text">£{serviceCharge.toFixed(2)}</span>
+                  <span className="font-semibold text-brand-text">€{serviceCharge.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-brand-muted font-body">
                   <span>Delivery Fee</span>
                   <span className="font-semibold text-brand-text">
-                    {deliveryFee === 0 ? "FREE" : `£${deliveryFee.toFixed(2)}`}
+                    {deliveryFee === 0 ? "FREE" : `€${deliveryFee.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="pt-4 border-t border-brand-lavender-mid flex justify-between items-end">
                   <span className="font-display font-bold text-brand-text">Total</span>
-                  <span className="font-display font-bold text-3xl text-brand-violet">£{total.toFixed(2)}</span>
+                  <span className="font-display font-bold text-3xl text-brand-violet">€{total.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -484,7 +492,7 @@ export default function CartPage() {
                         : "text-brand-muted hover:text-brand-violet"
                     }`}
                   >
-                    Card (Stripe)
+                    Card
                   </button>
                 </div>
               </div>
@@ -495,12 +503,31 @@ export default function CartPage() {
                   <p className="text-xs font-body text-red-500 mt-1">Please check back during our opening hours.</p>
                 </div>
               )}
+
+              {minimumEligibleAmount < MIN_ORDER_TOTAL && (
+                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                  <p className="text-sm font-display font-bold text-amber-700">
+                    Minimum order amount is €{MIN_ORDER_TOTAL.toFixed(2)} (excluding delivery)
+                  </p>
+                  <p className="text-xs font-body text-amber-700 mt-1">
+                    Add more items to continue checkout.
+                  </p>
+                </div>
+              )}
               
               <button 
                 disabled={isCheckoutDisabled || isCardProcessing}
                 onClick={async () => {
                   if (!isStoreOpen) {
                     toast.error("Sorry, the store is closed right now.");
+                    return;
+                  }
+
+                  // Guard both CoD and Card paths in case button state is bypassed.
+                  if (minimumEligibleAmount < MIN_ORDER_TOTAL) {
+                    toast.error(
+                      `Minimum order amount is €${MIN_ORDER_TOTAL.toFixed(2)} excluding delivery fee.`
+                    );
                     return;
                   }
 
@@ -588,51 +615,52 @@ export default function CartPage() {
                     doc.text(`No: #${docRef.id.slice(0, 8).toUpperCase()}`, pageW - 14, 27, { align: "right" });
                     doc.text(`Date: ${dateStr}`, pageW - 14, 31, { align: "right" });
                     doc.text(`Time: ${timeStr}`, pageW - 14, 35, { align: "right" });
+                    doc.text("Payment: Cash on Delivery", pageW - 14, 39, { align: "right" });
 
                     // Divider
                     doc.setDrawColor(0);
                     doc.setLineWidth(0.5);
-                    doc.line(14, 40, pageW - 14, 40);
+                    doc.line(14, 42, pageW - 14, 42);
 
                     // ── Details grid ──
                     doc.setTextColor(120);
                     doc.setFontSize(7);
                     doc.setFont("helvetica", "bold");
-                    doc.text("SERVICE TYPE", 14, 48);
-                    doc.text("CUSTOMER DETAILS", pageW / 2, 48);
+                    doc.text("SERVICE TYPE", 14, 50);
+                    doc.text("CUSTOMER DETAILS", pageW / 2, 50);
 
                     doc.setFont("helvetica", "normal");
                     doc.setFontSize(9);
                     doc.setTextColor(0);
-                    doc.text(orderType.toUpperCase(), 14, 54);
+                    doc.text(orderType.toUpperCase(), 14, 56);
 
                     if (orderType === "delivery" && driverName) {
                       doc.setFontSize(8);
                       doc.setTextColor(80);
-                      doc.text(`Driver: ${driverName}`, 14, 59);
-                      if (driverPhone) doc.text(`Mobile: ${driverPhone}`, 14, 63);
+                      doc.text(`Driver: ${driverName}`, 14, 61);
+                      if (driverPhone) doc.text(`Mobile: ${driverPhone}`, 14, 65);
                     }
 
                     doc.setFontSize(9);
                     doc.setTextColor(0);
                     doc.setFont("helvetica", "bold");
-                    doc.text(user?.name || "Guest", pageW / 2, 54);
+                    doc.text(user?.name || "Guest", pageW / 2, 56);
                     doc.setFont("helvetica", "normal");
                     doc.setFontSize(8);
                     doc.setTextColor(80);
-                    if (phone || user?.phone) doc.text(`${phone || user?.phone}`, pageW / 2, 59);
+                    if (phone || user?.phone) doc.text(`${phone || user?.phone}`, pageW / 2, 61);
                     if (orderType === "delivery" && currentAddress) {
-                      doc.text(currentAddress, pageW / 2, 64, { maxWidth: pageW / 2 - 14 });
+                      doc.text(currentAddress, pageW / 2, 66, { maxWidth: pageW / 2 - 14 });
                     } else {
-                      doc.text("Collection / Takeaway", pageW / 2, 64);
+                      doc.text("Collection / Takeaway", pageW / 2, 66);
                       if (orderType === "collection") {
                         doc.setFont("helvetica", "bold");
-                        doc.text(`Requested Pickup: ${pickupMinutes} mins`, pageW / 2, 68);
+                        doc.text(`Requested Pickup: ${pickupMinutes} mins`, pageW / 2, 70);
                       }
                     }
 
                     // ── Items table ──
-                    const tableStartY = orderType === "delivery" && driverPhone ? 74 : 70;
+                    const tableStartY = orderType === "delivery" && driverPhone ? 76 : 72;
                     autoTable(doc, {
                       startY: tableStartY,
                       head: [["Item Description", "Qty", "Unit", "Amount"]],
@@ -642,8 +670,8 @@ export default function CartPage() {
                           (item.selectedSide ? ` / ${item.selectedSide}` : "") +
                           (item.selectedSpice ? ` · ${item.selectedSpice}` : ""),
                         item.quantity,
-                        `\u00a3${(item.basePrice || 0).toFixed(2)}`,
-                        `\u00a3${((item.basePrice || 0) * item.quantity).toFixed(2)}`
+                        `€${(item.basePrice || 0).toFixed(2)}`,
+                        `€${((item.basePrice || 0) * item.quantity).toFixed(2)}`
                       ]),
                       headStyles: { fillColor: [30, 30, 30], textColor: 255, fontSize: 8, fontStyle: "bold" },
                       bodyStyles: { fontSize: 8 },
@@ -665,13 +693,13 @@ export default function CartPage() {
                       doc.text(label, pageW - 80, y);
                       doc.text(val, pageW - 14, y, { align: "right" });
                     };
-                    addRow("Subtotal",        `\u00a3${subtotal.toFixed(2)}`,     tY + 8);
-                    addRow("Service Charge",  `\u00a3${serviceCharge.toFixed(2)}`,tY + 14);
-                    if (orderType === "delivery") addRow("Delivery", `\u00a3${deliveryFee.toFixed(2)}`, tY + 20);
+                    addRow("Subtotal",        `€${subtotal.toFixed(2)}`,     tY + 8);
+                    addRow("Service Charge",  `€${serviceCharge.toFixed(2)}`,tY + 14);
+                    if (orderType === "delivery") addRow("Delivery", `€${deliveryFee.toFixed(2)}`, tY + 20);
                     const totalY = orderType === "delivery" ? tY + 28 : tY + 22;
                     doc.setLineWidth(0.4);
                     doc.line(pageW - 80, totalY - 2, pageW - 14, totalY - 2);
-                    addRow("TOTAL AMOUNT",    `\u00a3${total.toFixed(2)}`,        totalY + 4, true);
+                    addRow("TOTAL AMOUNT",    `€${total.toFixed(2)}`,        totalY + 4, true);
 
                     // ── Footer ──
                     const footY = totalY + 22;

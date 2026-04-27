@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Mail, Phone, MapPin, Clock, Send, MessageSquare } from "lucide-react";
+import TypewriterText from "@/components/TypewriterText";
+import { createContactMessage } from "@/lib/firebase/messages/service";
+import { toast } from "sonner";
 
 const Map = dynamic(() => import("@/components/Map"), { 
   ssr: false,
@@ -56,15 +59,29 @@ export default function ContactPage() {
   const [formState, setFormState] = useState({ name: "", email: "", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const isFormComplete =
+    formState.name.trim().length > 0 &&
+    formState.email.trim().length > 0 &&
+    formState.message.trim().length > 0;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormComplete) {
+      toast.error("Please fill all required fields.");
+      return;
+    }
+
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      await createContactMessage(formState);
       setIsSubmitting(false);
       setIsSuccess(true);
       setFormState({ name: "", email: "", message: "" });
-    }, 1500);
+    } catch (error) {
+      console.error("Failed to send contact message:", error);
+      toast.error("Failed to send message. Please try again.");
+      setIsSubmitting(false);
+    }
   };
 
   const position: [number, number] = [52.262456, -7.116006];
@@ -76,11 +93,18 @@ export default function ContactPage() {
           <div className="pill-badge mx-auto mb-6 w-fit">
             <MessageSquare className="w-3.5 h-3.5 text-brand-amber" /> Contact Us
           </div>
-          <h1 className="font-display font-bold text-brand-text text-5xl md:text-6xl tracking-tight mb-4">
-            Let's Start a <span className="text-brand-violet">Conversation</span>.
+          <h1 className="font-display font-bold text-brand-text text-5xl md:text-6xl tracking-tight mb-4 min-h-[4rem] md:min-h-[4.75rem]">
+            <TypewriterText
+              speedMs={36}
+              segments={[
+                { text: "Let's Start a " },
+                { text: "Conversation", className: "text-brand-violet" },
+                { text: "." },
+              ]}
+            />
           </h1>
           <p className="font-body text-brand-muted text-lg max-w-2xl mx-auto">
-            Whether you have a question or want to book a table, we're here for you.
+            Whether you have a question or want to give us a shout, we're here for you.
           </p>
         </header>
 
@@ -107,7 +131,11 @@ export default function ContactPage() {
                   <label htmlFor="message" className="block text-sm font-display font-semibold text-brand-text mb-2">Message</label>
                   <textarea id="message" required rows={5} value={formState.message} onChange={(e) => setFormState({ ...formState, message: e.target.value })} className="w-full bg-white border border-brand-lavender-mid rounded-xl px-4 py-3 font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/20 resize-none" />
                 </div>
-                <button type="submit" disabled={isSubmitting} className="w-full bg-brand-violet text-white font-display font-bold rounded-xl py-4 shadow-violet-glow">
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !isFormComplete}
+                  className="w-full bg-brand-violet text-white font-display font-bold rounded-xl py-4 shadow-violet-glow disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </button>
               </form>

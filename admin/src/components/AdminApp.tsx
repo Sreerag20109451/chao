@@ -25,6 +25,7 @@ import Sidebar        from "./Sidebar";
 import DashboardPage  from "./pages/Dashboard";
 import MenuManagement from "./pages/MenuManagement";
 import AdminOrders    from "./pages/Orders";
+import MessagesPage   from "./pages/Messages";
 import Payments       from "./pages/Payments";
 import AdminSettings  from "./pages/Settings";
 import Billing        from "./pages/Billing";
@@ -97,6 +98,7 @@ function AppRoutes() {
           <Route path="/menu"     element={<MenuManagement />} />
           <Route path="/deals"    element={<DealsPage />} />
           <Route path="/orders"   element={<AdminOrders />} />
+          <Route path="/messages" element={<MessagesPage />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/drivers"  element={<Drivers />} />
           <Route path="/settings" element={<AdminSettings />} />

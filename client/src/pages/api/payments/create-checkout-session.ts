@@ -13,9 +13,12 @@ type CreateCheckoutPayload = {
   deliveryFee: number;
   serviceCharge: number;
   customerName: string;
+  customerEmail?: string | null;
   customerPhone: string | null;
   address: string | null;
 };
+
+const MIN_ORDER_TOTAL_EUR = 10;
 
 /**
  * Creates a Stripe Checkout Session for card payments.
@@ -36,6 +39,19 @@ export default async function handler(
 
     if (!Array.isArray(body.items) || body.items.length === 0) {
       return res.status(400).json({ error: "No cart items provided" });
+    }
+
+    // Server-side minimum-order validation (do not trust client-only checks).
+    // Delivery fee is excluded from minimum policy.
+    const itemsSubtotal = body.items.reduce(
+      (sum, item) => sum + (item.basePrice || 0) * (item.quantity || 1),
+      0
+    );
+    const minimumEligibleTotal = itemsSubtotal + (body.serviceCharge || 0);
+    if (minimumEligibleTotal < MIN_ORDER_TOTAL_EUR) {
+      return res.status(400).json({
+        error: `Minimum order amount is €${MIN_ORDER_TOTAL_EUR.toFixed(2)} excluding delivery fee.`,
+      });
     }
 
     const lineItems = body.items.map((item) => ({
@@ -71,6 +87,28 @@ export default async function handler(
 
     const origin = req.headers.origin || process.env.NEXT_PUBLIC_CLIENT_BASE_URL || "http://localhost:3000";
 
+    // Secure card "saving" is handled by Stripe vaulting:
+    // - We attach checkout to a Stripe Customer
+    // - We request future usage so the card can be reused without storing card PAN ourselves.
+    let customerId: string | undefined;
+    const normalizedEmail = body.customerEmail?.trim().toLowerCase();
+    if (normalizedEmail) {
+      const existing = await stripe.customers.list({ email: normalizedEmail, limit: 1 });
+      if (existing.data.length > 0) {
+        customerId = existing.data[0].id;
+      } else {
+        const created = await stripe.customers.create({
+          email: normalizedEmail,
+          name: body.customerName || undefined,
+          phone: body.customerPhone || undefined,
+          metadata: {
+            source: "chao-web-checkout",
+          },
+        });
+        customerId = created.id;
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -82,6 +120,12 @@ export default async function handler(
         customerName: body.customerName || "Guest",
         customerPhone: body.customerPhone || "",
         address: body.address || "",
+      },
+      customer: customerId,
+      customer_email: customerId ? undefined : normalizedEmail || undefined,
+      payment_intent_data: {
+        // Tells Stripe to securely save card for future payments.
+        setup_future_usage: "off_session",
       },
     });
 

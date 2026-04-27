@@ -307,7 +307,7 @@ export default function MenuManagement() {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Base Price (£)</Label>
+                  <Label>Base Price (€)</Label>
                   <Input 
                     type="number"
                     step="0.01"
@@ -530,11 +530,11 @@ export default function MenuManagement() {
                     <div className="flex flex-col">
                       {activeDeals.find(d => d.items?.includes(item.id)) && (
                         <span className="text-[10px] text-brand-muted line-through">
-                          £{item.basePrice.toFixed(2)}
+                          €{item.basePrice.toFixed(2)}
                         </span>
                       )}
                       <span className="text-brand-text">
-                        £{(activeDeals.find(d => d.items?.includes(item.id))?.dealPrice || item.basePrice).toFixed(2)}
+                        €{(activeDeals.find(d => d.items?.includes(item.id))?.dealPrice || item.basePrice).toFixed(2)}
                       </span>
                     </div>
                   </td>
