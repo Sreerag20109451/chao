@@ -1,0 +1,61 @@
+import type { MenuItem } from "@/lib/menuData";
+
+/** Chao Kids specials — import from Menu Management (skips duplicate names). */
+export const CHAO_KIDS_SEED: Omit<MenuItem, "id">[] = [
+  {
+    name: "Wok Fried Chicken Noodle",
+    description: "Egg fried noodle with seasoning sauce.",
+    basePrice: 5.99,
+    category: "Chao Kids specials",
+    availableMeats: [],
+    availableSides: [],
+    allergens: ["Crustaceans", "Eggs", "Gluten", "Soy", "Molluscs"],
+    available: true,
+    emoji: "🍜",
+  },
+  {
+    name: "Sweet Sesame Chicken",
+    description:
+      "Crispy fried chicken with egg fried rice in sweet and sour sauce.",
+    basePrice: 6.99,
+    category: "Chao Kids specials",
+    availableMeats: [],
+    availableSides: [],
+    allergens: ["Crustaceans", "Eggs", "Gluten", "Soy", "Sesame", "Molluscs"],
+    available: true,
+    emoji: "🍗",
+  },
+  {
+    name: "Creamy Chicken Korma",
+    description: "Steamed shredded chicken curry with jasmine rice.",
+    basePrice: 6.99,
+    category: "Chao Kids specials",
+    availableMeats: [],
+    availableSides: [],
+    allergens: ["Dairy/Milk"],
+    available: true,
+    emoji: "🍛",
+  },
+  {
+    name: "Butter Chicken Masala (Kids)",
+    description: "Grilled chicken curry with jasmine rice.",
+    basePrice: 6.99,
+    category: "Chao Kids specials",
+    availableMeats: [],
+    availableSides: [],
+    allergens: ["Dairy/Milk"],
+    available: true,
+    emoji: "🍛",
+  },
+  {
+    name: "Chips & Nuggets",
+    description: "Deep fried potato chips with chicken nuggets.",
+    basePrice: 5.99,
+    category: "Chao Kids specials",
+    availableMeats: [],
+    availableSides: [],
+    allergens: ["Crustaceans", "Eggs", "Gluten", "Soy"],
+    available: true,
+    emoji: "🍟",
+  },
+];

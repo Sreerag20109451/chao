@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { ShoppingBag, Clock, CheckCircle2, XCircle, Search, FileText, ChevronDown } from "lucide-react";
-import { subscribeToOrders } from "@/lib/firebase/orders/service";
-import { doc, updateDoc, collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
-import Invoice, { InvoiceData } from "../Invoice";
-
-const STATUS_OPTIONS = ["pending", "preparing", "ready", "delivered", "cancelled"] as const;
-type OrderStatus = typeof STATUS_OPTIONS[number];
+import React, { useMemo, useState } from "react";
+import { ShoppingBag, Search, FileText, ChevronDown } from "lucide-react";
+import Invoice from "../Invoice";
+import { useOrdersController } from "@/controllers/useOrdersController";
+import { buildInvoiceData, formatPlacedAt, normalizeOrderStatus, parseOrderDate } from "@/controllers/ordersController";
+import type { AdminOrder, OrderStatus } from "@/models/order";
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   pending:   "bg-amber-50   text-amber-600  border-amber-200",
@@ -17,76 +14,24 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
 };
 
 export default function AdminOrders() {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [search, setSearch] = useState("");
-  const [invoiceOrder, setInvoiceOrder] = useState<any | null>(null);
-  const [activeDriver, setActiveDriver] = useState<string | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-
-  // Subscribe to live orders
-  useEffect(() => {
-    const unsubscribe = subscribeToOrders((newOrders) => setOrders(newOrders));
-    return () => unsubscribe();
-  }, []);
-
-  // Fetch today's active driver once
-  useEffect(() => {
-    getDocs(query(collection(db, "drivers"), where("isWorkingToday", "==", true)))
-      .then(snap => {
-        if (!snap.empty) setActiveDriver(snap.docs[0].data().name);
-      })
-      .catch(console.error);
-  }, []);
-
-  const updateStatus = async (orderId: string, status: OrderStatus) => {
-    setUpdatingId(orderId);
-    try {
-      await updateDoc(doc(db, "orders", orderId), { status });
-    } catch (e) {
-      console.error("Failed to update status:", e);
-    } finally {
-      setUpdatingId(null);
-    }
-  };
-
-  const updatePrepTime = async (orderId: string, mins: number) => {
-    try {
-      await updateDoc(doc(db, "orders", orderId), { requestedPickupTime: mins });
-    } catch (e) {
-      console.error("Failed to update prep time:", e);
-    }
-  };
-
-  const filtered = orders.filter(o =>
-    !search ||
-    o.id.toLowerCase().includes(search.toLowerCase()) ||
-    (o.customerName || "").toLowerCase().includes(search.toLowerCase())
+  const [invoiceOrder, setInvoiceOrder] = useState<AdminOrder | null>(null);
+  const {
+    search,
+    setSearch,
+    activeDriver,
+    updatingId,
+    expandedOrderIds,
+    filteredOrders,
+    pendingOrdersCount,
+    updateStatus,
+    updatePrepTime,
+    toggleExpanded,
+    statusOptions,
+  } = useOrdersController();
+  const invoiceData = useMemo(
+    () => (invoiceOrder ? buildInvoiceData(invoiceOrder, activeDriver) : null),
+    [invoiceOrder, activeDriver]
   );
-
-  const buildInvoiceData = (order: any): InvoiceData => ({
-    orderId: order.id,
-    customerName: order.customerName || "Guest",
-    customerPhone: order.customerPhone || undefined,
-    address: order.address || undefined,
-    orderType: order.orderType || "collection",
-    items: (order.items || []).map((i: any) => ({
-      name: i.name,
-      quantity: i.quantity,
-      price: i.basePrice || 0,
-      selectedProtein: i.selectedProtein || undefined,
-      selectedSide: i.selectedSide || undefined,
-    })),
-    subtotal: order.subtotal || 0,
-    deliveryCharge: order.deliveryCharge || 0,
-    total: order.total || 0,
-    date: order.createdAt
-      ? new Date(order.createdAt.seconds * 1000).toLocaleDateString()
-      : new Date().toLocaleDateString(),
-    time: order.createdAt
-      ? new Date(order.createdAt.seconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    driverName: order.orderType === "delivery" ? (activeDriver || undefined) : undefined,
-  });
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -99,7 +44,7 @@ export default function AdminOrders() {
         <div className="bg-white px-4 py-2 rounded-xl border border-brand-lavender-mid shadow-sm flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-brand-violet animate-pulse" />
           <span className="font-display font-bold text-sm text-brand-text">
-            {orders.filter(o => o.status === "pending").length} Live Orders
+            {pendingOrdersCount} Live Orders
           </span>
         </div>
       </div>
@@ -127,6 +72,7 @@ export default function AdminOrders() {
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Order ID</th>
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Customer</th>
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Total</th>
+                <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Payment</th>
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Prep Time</th>
                 <th className="px-6 py-4 text-xs font-display font-bold text-brand-muted uppercase tracking-wider">Placed At</th>
@@ -134,9 +80,9 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-lavender-mid">
-              {filtered.length === 0 ? (
+              {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
+                  <td colSpan={8} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-4 text-brand-muted">
                       <ShoppingBag className="w-10 h-10 opacity-30" />
                       <p className="font-display font-bold">No orders yet</p>
@@ -144,75 +90,135 @@ export default function AdminOrders() {
                   </td>
                 </tr>
               ) : (
-                filtered.map(order => (
-                  <tr key={order.id} className="hover:bg-brand-lavender/5 transition-colors">
-                    <td className="px-6 py-4 font-display font-bold text-brand-violet">
-                      #{order.id.slice(0, 6)}
-                      {order.source === "pos" && (
-                        <span className="ml-1 text-[9px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded font-bold uppercase">POS</span>
-                      )}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <p className="font-display font-bold text-brand-text">{order.customerName || "Guest"}</p>
-                      <p className="text-[10px] text-brand-muted font-bold uppercase tracking-wider">{order.orderType}</p>
-                    </td>
-
-                    <td className="px-6 py-4 font-display font-bold text-brand-text text-lg">
-                      £{order.total?.toFixed(2) || "0.00"}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="relative inline-block">
-                        <select
-                          value={order.status || "pending"}
-                          disabled={updatingId === order.id}
-                          onChange={e => updateStatus(order.id, e.target.value as OrderStatus)}
-                          className={`appearance-none pl-3 pr-8 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider border cursor-pointer focus:outline-none transition-all ${STATUS_STYLES[order.status as OrderStatus] || STATUS_STYLES.pending} disabled:opacity-60`}
-                        >
-                          {STATUS_OPTIONS.map(s => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-60" />
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="number"
-                            defaultValue={order.requestedPickupTime || 20}
-                            onBlur={(e) => updatePrepTime(order.id, parseInt(e.target.value))}
-                            className="w-16 px-2 py-1 bg-brand-lavender/10 border border-brand-lavender-mid rounded text-xs font-bold text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-violet"
-                          />
-                          <span className="text-[10px] text-brand-muted font-bold uppercase">Min</span>
-                        </div>
-                        {order.requestedPickupTime && order.createdAt && (
-                          <p className="text-[9px] text-brand-violet font-bold uppercase tracking-tighter">
-                            Target: {new Date(order.createdAt.seconds * 1000 + order.requestedPickupTime * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                filteredOrders.map(order => (
+                  <React.Fragment key={order.id}>
+                    {(() => {
+                      const normalizedStatus = normalizeOrderStatus(order.status);
+                      return (
+                    <tr className="hover:bg-brand-lavender/5 transition-colors">
+                      <td className="px-6 py-4 font-display font-bold text-brand-violet">
+                        #{order.id.slice(0, 6)}
+                        {order.source === "pos" && (
+                          <span className="ml-1 text-[9px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded font-bold uppercase">POS</span>
                         )}
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="px-6 py-4 text-xs font-body text-brand-muted">
-                      {order.createdAt
-                        ? new Date(order.createdAt.seconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                        : "Just now"}
-                    </td>
+                      <td className="px-6 py-4">
+                        <p className="font-display font-bold text-brand-text">{order.customerName || "Guest"}</p>
+                        <p className="text-[10px] text-brand-muted font-bold uppercase tracking-wider">{order.orderType}</p>
+                      </td>
 
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => setInvoiceOrder(order)}
-                        className="inline-flex items-center gap-1.5 text-brand-violet hover:text-brand-violet-dark font-display font-bold text-xs uppercase tracking-wider transition-colors"
-                      >
-                        <FileText className="w-4 h-4" />
-                        View
-                      </button>
-                    </td>
-                  </tr>
+                      <td className="px-6 py-4 font-display font-bold text-brand-text text-lg">
+                        £{order.total?.toFixed(2) || "0.00"}
+                      </td>
+
+                      {/* Show payment method in the main table so ops can act quickly. */}
+                      <td className="px-6 py-4">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-brand-lavender/20 text-brand-text border border-brand-lavender-mid">
+                          {order.paymentMethod === "card"
+                            ? "Card"
+                            : order.paymentMethod === "cod"
+                            ? "CoD"
+                            : "Not set"}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="relative inline-block">
+                          <select
+                            value={normalizedStatus}
+                            disabled={updatingId === order.id}
+                            onChange={e => updateStatus(order, e.target.value as OrderStatus)}
+                            className={`appearance-none pl-3 pr-8 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider border cursor-pointer focus:outline-none transition-all ${STATUS_STYLES[normalizedStatus] || STATUS_STYLES.pending} disabled:opacity-60`}
+                          >
+                            {statusOptions.map(s => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-60" />
+                        </div>
+                        {normalizedStatus === "pending" && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              disabled={updatingId === order.id}
+                              onClick={() => updateStatus(order, "preparing")}
+                              className="px-2.5 py-1 text-[10px] font-bold uppercase rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors disabled:opacity-60"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              disabled={updatingId === order.id}
+                              onClick={() => updateStatus(order, "cancelled")}
+                              className="px-2.5 py-1 text-[10px] font-bold uppercase rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors disabled:opacity-60"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="number"
+                              defaultValue={order.requestedPickupTime || 20}
+                              onBlur={(e) => updatePrepTime(order.id, parseInt(e.target.value))}
+                              className="w-16 px-2 py-1 bg-brand-lavender/10 border border-brand-lavender-mid rounded text-xs font-bold text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-violet"
+                            />
+                            <span className="text-[10px] text-brand-muted font-bold uppercase">Min</span>
+                          </div>
+                          {order.requestedPickupTime && parseOrderDate(order.createdAt) && (
+                            <p className="text-[9px] text-brand-violet font-bold uppercase tracking-tighter">
+                              Target: {new Date(parseOrderDate(order.createdAt)!.getTime() + order.requestedPickupTime * 60000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-xs font-body text-brand-muted">
+                        {formatPlacedAt(order.createdAt, order.date)}
+                      </td>
+
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end items-center gap-3">
+                          <button
+                            onClick={() => toggleExpanded(order.id)}
+                            className="inline-flex items-center gap-1.5 text-brand-muted hover:text-brand-violet font-display font-bold text-xs uppercase tracking-wider transition-colors"
+                          >
+                            {expandedOrderIds.includes(order.id) ? "Hide" : "Details"}
+                          </button>
+                          <button
+                            onClick={() => setInvoiceOrder(order)}
+                            className="inline-flex items-center gap-1.5 text-brand-violet hover:text-brand-violet-dark font-display font-bold text-xs uppercase tracking-wider transition-colors"
+                          >
+                            <FileText className="w-4 h-4" />
+                            View
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                      );
+                    })()}
+                    {expandedOrderIds.includes(order.id) && (
+                      <tr className="bg-brand-lavender/5">
+                        <td colSpan={8} className="px-6 py-4">
+                          <div className="grid gap-4 md:grid-cols-3">
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-brand-muted">Phone</p>
+                              <p className="font-body text-sm text-brand-text">{order.customerPhone || "N/A"}</p>
+                            </div>
+                            <div className="md:col-span-2">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-brand-muted">Address</p>
+                              <p className="font-body text-sm text-brand-text">
+                                {order.orderType === "delivery" ? (order.address || "N/A") : "Collection order"}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))
               )}
             </tbody>
@@ -223,7 +229,7 @@ export default function AdminOrders() {
       {/* Invoice Modal */}
       {invoiceOrder && (
         <Invoice
-          data={buildInvoiceData(invoiceOrder)}
+                          data={invoiceData}
           onClose={() => setInvoiceOrder(null)}
         />
       )}

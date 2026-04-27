@@ -20,7 +20,7 @@ const mockItem: Omit<CartItem, "cartId" | "quantity"> = {
   name: 'Test Dish',
   description: 'A test dish',
   basePrice: 10,
-  category: 'Main Course',
+  category: "Beverages",
   availableMeats: [],
   availableSides: [],
   available: true,
@@ -42,7 +42,7 @@ describe('cartSlice', () => {
     expect(actual.items.length).toBe(1);
     expect(actual.items[0].name).toBe('Test Dish');
     expect(actual.items[0].quantity).toBe(1);
-    expect(actual.items[0].cartId).toBe('1-none-none');
+    expect(actual.items[0].cartId).toBe("1-none-none-none");
   });
 
   it('should increment quantity if same item added twice', () => {

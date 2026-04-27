@@ -8,6 +8,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
 import { logout } from "@/lib/features/authSlice";
 import { logoutUser } from "@/lib/firebase";
+import ClientNotificationBar from "@/components/ClientNotificationBar";
 
 const navLinks = [
   { href: "/menu",    label: "Menu" },
@@ -23,6 +24,13 @@ export default function Navbar() {
   const itemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleNavigate = (href: string) => {
+    setMobileOpen(false);
+    if (pathname !== href) {
+      void router.push(href);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -66,6 +74,7 @@ export default function Navbar() {
                 src="/logo.png" 
                 alt="Chao Logo" 
                 fill 
+                sizes="40px"
                 className="object-contain p-1"
               />
             </div>
@@ -81,8 +90,9 @@ export default function Navbar() {
         <ul className="hidden md:flex items-center justify-center gap-8 flex-none">
           {navLinks.map(({ href, label }) => (
             <li key={href}>
-              <Link
-                href={href}
+              <button
+                type="button"
+                onClick={() => handleNavigate(href)}
                 className={`nav-link-hover font-display text-sm font-medium tracking-wide transition-colors ${
                   pathname === href
                     ? "text-brand-violet"
@@ -92,7 +102,7 @@ export default function Navbar() {
                 }`}
               >
                 {label}
-              </Link>
+              </button>
             </li>
           ))}
         </ul>
@@ -100,6 +110,10 @@ export default function Navbar() {
         {/* ---- Right Side: Desktop CTA & Mobile Hamburger ---- */}
         <div className="flex-1 flex justify-end items-center gap-4">
           <div className="hidden md:flex items-center gap-4">
+            {isAuthenticated && (
+              <ClientNotificationBar scrolled={scrolled} />
+            )}
+
             {isAuthenticated && (
               <Link
                 href="/cart"
@@ -153,7 +167,7 @@ export default function Navbar() {
                   className="inline-flex items-center justify-center gap-2 bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-semibold rounded-full px-5 py-2 text-sm shadow-violet-glow transition-all duration-200 group"
                 >
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center overflow-hidden p-0.5 group-hover:scale-110 transition-transform">
-                    <Image src="/logo.png" alt="" width={16} height={16} className="object-contain" />
+                    <Image src="/logo.png" alt="" width={16} height={16} sizes="16px" className="object-contain" />
                   </div>
                   Login
                 </Link>
@@ -175,7 +189,7 @@ export default function Navbar() {
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white shadow-sm border border-brand-lavender-mid">
-                    <Image src="/logo.png" alt="Chao Logo" fill className="object-contain p-1" />
+                    <Image src="/logo.png" alt="Chao Logo" fill sizes="32px" className="object-contain p-1" />
                   </div>
                   <span className="font-display font-bold text-xl text-brand-text">Chao</span>
                 </div>
@@ -190,17 +204,17 @@ export default function Navbar() {
               <ul className="flex flex-col gap-2">
                 {navLinks.map(({ href, label }) => (
                   <li key={href}>
-                    <Link
-                      href={href}
-                      onClick={() => setMobileOpen(false)}
-                      className={`block px-4 py-3 rounded-xl font-display font-medium transition-colors ${
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate(href)}
+                      className={`block w-full text-left px-4 py-3 rounded-xl font-display font-medium transition-colors ${
                         pathname === href
                           ? "bg-brand-violet text-white"
                           : "text-brand-text hover:bg-brand-lavender-mid"
                       }`}
                     >
                       {label}
-                    </Link>
+                    </button>
                   </li>
                 ))}
                 {isAuthenticated && (
@@ -259,7 +273,7 @@ export default function Navbar() {
                       className="inline-flex items-center justify-center gap-3 w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-semibold rounded-full py-4 shadow-violet-glow group"
                     >
                       <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center overflow-hidden p-1 group-active:scale-95 transition-transform">
-                        <Image src="/logo.png" alt="" width={20} height={20} className="object-contain" />
+                        <Image src="/logo.png" alt="" width={20} height={20} sizes="20px" className="object-contain" />
                       </div>
                       Login to Your Account
                     </Link>

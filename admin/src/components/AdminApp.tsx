@@ -25,6 +25,7 @@ import Sidebar        from "./Sidebar";
 import DashboardPage  from "./pages/Dashboard";
 import MenuManagement from "./pages/MenuManagement";
 import AdminOrders    from "./pages/Orders";
+import Payments       from "./pages/Payments";
 import AdminSettings  from "./pages/Settings";
 import Billing        from "./pages/Billing";
 import Drivers        from "./pages/Drivers";
@@ -36,10 +37,10 @@ import DealsPage      from "./pages/Deals";
 // ── Spinner shown while auth state is loading from localStorage ────────────────
 function AuthLoadingScreen() {
   return (
-    <div className="min-h-screen bg-[hsl(240_15%_7%)] flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 rounded-full border-4 border-[hsl(250_78%_60%/0.3)] border-t-[hsl(250_78%_60%)] animate-spin" />
-        <p className="text-sm text-[hsl(252_20%_50%)] font-display">Loading…</p>
+        <div className="w-10 h-10 rounded-full border-4 border-brand-violet/25 border-t-brand-violet animate-spin" />
+        <p className="text-sm text-brand-muted font-display">Loading…</p>
       </div>
     </div>
   );
@@ -69,7 +70,7 @@ function DashboardShell() {
       </div>
       <div className="flex-1 flex flex-col min-w-0">
         <AdminNavbar />
-        <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 w-full min-w-0">
           <Outlet />
         </main>
       </div>
@@ -96,6 +97,7 @@ function AppRoutes() {
           <Route path="/menu"     element={<MenuManagement />} />
           <Route path="/deals"    element={<DealsPage />} />
           <Route path="/orders"   element={<AdminOrders />} />
+          <Route path="/payments" element={<Payments />} />
           <Route path="/drivers"  element={<Drivers />} />
           <Route path="/settings" element={<AdminSettings />} />
         </Route>

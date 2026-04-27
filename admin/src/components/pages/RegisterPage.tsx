@@ -71,11 +71,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(240_15%_7%)] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-sidebar flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background blobs */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-[hsl(250_78%_60%/0.16)] blur-[100px]" />
-        <div className="absolute bottom-0 -left-32 w-[400px] h-[400px] rounded-full bg-[hsl(280_78%_60%/0.10)] blur-[100px]" />
+        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-brand-violet/25 blur-[100px]" />
+        <div className="absolute bottom-0 -left-32 w-[400px] h-[400px] rounded-full bg-brand-amber/10 blur-[100px]" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
@@ -99,15 +99,15 @@ export default function RegisterPage() {
         <div className="bg-white/[0.05] border border-white/[0.10] rounded-3xl p-8 backdrop-blur-sm">
           <div className="mb-8 text-center">
             <h1 className="font-display font-bold text-2xl text-white mb-2">Create your account</h1>
-            <p className="text-sm text-[hsl(252_20%_60%)] font-body">Get access to the Chao Admin dashboard</p>
+            <p className="text-sm text-white/55 font-body">Get access to the Chao Admin dashboard</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name */}
             <div className="space-y-2">
-              <label className="block text-xs font-display font-bold text-[hsl(252_30%_70%)] uppercase tracking-wider">Full name</label>
+              <label className="block text-xs font-display font-bold text-white/65 uppercase tracking-wider">Full name</label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(252_20%_50%)]" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/45" />
                 <input
                   id="register-name"
                   type="text"
@@ -115,16 +115,16 @@ export default function RegisterPage() {
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Your name"
-                  className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-[hsl(252_20%_40%)] rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-[hsl(250_78%_60%/0.5)] focus:border-[hsl(250_78%_60%/0.4)] transition-all"
+                  className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/35 rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/50 focus:border-brand-violet/40 transition-all"
                 />
               </div>
             </div>
 
             {/* Email */}
             <div className="space-y-2">
-              <label className="block text-xs font-display font-bold text-[hsl(252_30%_70%)] uppercase tracking-wider">Email address</label>
+              <label className="block text-xs font-display font-bold text-white/65 uppercase tracking-wider">Email address</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(252_20%_50%)]" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/45" />
                 <input
                   id="register-email"
                   type="email"
@@ -132,16 +132,16 @@ export default function RegisterPage() {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="admin@chaothai.co"
-                  className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-[hsl(252_20%_40%)] rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-[hsl(250_78%_60%/0.5)] focus:border-[hsl(250_78%_60%/0.4)] transition-all"
+                  className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/35 rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/50 focus:border-brand-violet/40 transition-all"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <label className="block text-xs font-display font-bold text-[hsl(252_30%_70%)] uppercase tracking-wider">Password</label>
+              <label className="block text-xs font-display font-bold text-white/65 uppercase tracking-wider">Password</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(252_20%_50%)]" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/45" />
                 <input
                   id="register-password"
                   type={showPw ? "text" : "password"}
@@ -149,12 +149,12 @@ export default function RegisterPage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-[hsl(252_20%_40%)] rounded-xl pl-11 pr-11 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-[hsl(250_78%_60%/0.5)] focus:border-[hsl(250_78%_60%/0.4)] transition-all"
+                  className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/35 rounded-xl pl-11 pr-11 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/50 focus:border-brand-violet/40 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(p => !p)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[hsl(252_20%_45%)] hover:text-white transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
                   tabIndex={-1}
                 >
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -167,7 +167,7 @@ export default function RegisterPage() {
                   {passwordRules.map(r => {
                     const ok = r.test(password);
                     return (
-                      <div key={r.label} className={`flex items-center gap-2 text-[11px] font-body transition-colors ${ok ? "text-emerald-400" : "text-[hsl(252_20%_45%)]"}`}>
+                      <div key={r.label} className={`flex items-center gap-2 text-[11px] font-body transition-colors ${ok ? "text-emerald-400" : "text-white/40"}`}>
                         <Check className={`w-3 h-3 shrink-0 ${ok ? "opacity-100" : "opacity-30"}`} />
                         {r.label}
                       </div>
@@ -179,9 +179,9 @@ export default function RegisterPage() {
 
             {/* Confirm Password */}
             <div className="space-y-2">
-              <label className="block text-xs font-display font-bold text-[hsl(252_30%_70%)] uppercase tracking-wider">Confirm password</label>
+              <label className="block text-xs font-display font-bold text-white/65 uppercase tracking-wider">Confirm password</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(252_20%_50%)]" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/45" />
                 <input
                   id="register-confirm-password"
                   type={showPw ? "text" : "password"}
@@ -189,12 +189,12 @@ export default function RegisterPage() {
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className={`w-full bg-white/[0.06] border text-white placeholder-[hsl(252_20%_40%)] rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 transition-all ${
+                  className={`w-full bg-white/[0.06] border text-white placeholder-white/35 rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 transition-all ${
                     confirmPassword.length > 0
                       ? passwordsMatch
                         ? "border-emerald-500/40 focus:ring-emerald-500/30"
                         : "border-red-500/40 focus:ring-red-500/30"
-                      : "border-white/[0.12] focus:ring-[hsl(250_78%_60%/0.5)]"
+                      : "border-white/[0.12] focus:ring-brand-violet/50"
                   }`}
                 />
               </div>
@@ -208,7 +208,7 @@ export default function RegisterPage() {
               id="register-submit"
               type="submit"
               disabled={loading}
-              className="w-full mt-2 flex items-center justify-center gap-2 bg-[hsl(250_78%_60%)] text-white font-display font-bold text-sm py-3.5 rounded-xl shadow-violet-glow hover:bg-[hsl(250_78%_50%)] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+              className="w-full mt-2 flex items-center justify-center gap-2 bg-brand-violet text-white font-display font-bold text-sm py-3.5 rounded-xl shadow-violet-glow hover:bg-brand-violet-dark disabled:opacity-60 disabled:cursor-not-allowed transition-all"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -218,15 +218,15 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-[hsl(252_20%_50%)] font-body">
+          <p className="mt-6 text-center text-sm text-white/50 font-body">
             Already have an account?{" "}
-            <Link to="/login" className="text-[hsl(250_78%_70%)] font-bold hover:text-[hsl(250_78%_80%)] transition-colors">
+            <Link to="/login" className="text-brand-amber font-bold hover:text-brand-amber/90 transition-colors">
               Sign in
             </Link>
           </p>
         </div>
 
-        <p className="mt-6 text-center text-xs text-[hsl(252_20%_35%)] font-body">
+        <p className="mt-6 text-center text-xs text-white/35 font-body">
           Chao Admin · Restaurant Management System
         </p>
       </div>

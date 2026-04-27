@@ -1,7 +1,6 @@
 /* ============================================================
-   CHAO Thai Restaurant — Global Styles
-   Palette: Soft lavender background, violet primary, amber accent
-   Inspired by the Draftr design reference provided by the user.
+   CHAO Thai Restaurant — Global Styles (Client)
+   Palette: Soft mint / sage pastels, emerald primary, amber accent
    ============================================================ */
 
 @import "tailwindcss";
@@ -31,17 +30,15 @@
   --color-input:                var(--input);
   --color-ring:                 var(--ring);
 
-  /* ----- Brand colour palette (Draftr-inspired) -----
-     violet = primary CTA (matches Draftr purple button)
-     amber  = accent highlights, price tags
-     lavender = hero/page background (matches Draftr hero wash) */
-  --color-brand-violet:        hsl(250 78% 60%);   /* #6357E8 */
-  --color-brand-violet-dark:   hsl(250 78% 45%);   /* #4A3EC0 hover */
-  --color-brand-amber:         hsl(42 90% 58%);    /* #F5C33A price/badge */
-  --color-brand-lavender:      hsl(252 60% 95%);   /* #ECE9FB hero bg */
-  --color-brand-lavender-mid:  hsl(252 55% 92%);   /* #DDD8F8 alt sections */
-  --color-brand-text:          hsl(240 15% 8%);    /* #0F0E17 headings */
-  --color-brand-muted:         hsl(240 10% 45%);   /* #6B6880 body */
+  /* ----- Brand colour palette (mint + emerald) -----
+     “violet” / “lavender” token names kept for Tailwind class compatibility */
+  --color-brand-violet:        hsl(158 48% 38%);   /* primary CTA — deep sage */
+  --color-brand-violet-dark:   hsl(158 52% 28%);   /* hover / pressed */
+  --color-brand-amber:         hsl(42 90% 58%);    /* price / highlight accent */
+  --color-brand-lavender:      hsl(145 42% 96%);   /* page wash — mint pastel */
+  --color-brand-lavender-mid:  hsl(148 35% 91%);   /* sections — sage pastel */
+  --color-brand-text:          hsl(155 18% 12%);   /* headings */
+  --color-brand-muted:         hsl(150 12% 40%);   /* body secondary */
 
   /* ----- Typography -----
      Display / hero + item names : Bai Jamjuree — modern, high-end Thai feel
@@ -63,36 +60,36 @@
 
 /* ---- CSS custom properties (light mode) ---- */
 :root {
-  /* Lavender wash background — the defining Draftr palette trait */
-  --background:            hsl(252 60% 95%);
-  --foreground:            hsl(240 15% 8%);
+  /* Mint wash background */
+  --background:            hsl(145 42% 96%);
+  --foreground:            hsl(155 18% 12%);
 
-  /* Cards on pure white for contrast against the lavender page */
+  /* Cards on pure white for contrast */
   --card:                  hsl(0 0% 100%);
-  --card-foreground:       hsl(240 15% 8%);
+  --card-foreground:       hsl(155 18% 12%);
 
   --popover:               hsl(0 0% 100%);
-  --popover-foreground:    hsl(240 15% 8%);
+  --popover-foreground:    hsl(155 18% 12%);
 
-  /* Primary = deep violet */
-  --primary:               hsl(250 78% 60%);
+  /* Primary = emerald / sage */
+  --primary:               hsl(158 48% 38%);
   --primary-foreground:    hsl(0 0% 100%);
 
-  /* Secondary = lighter lavender chip */
-  --secondary:             hsl(252 55% 92%);
-  --secondary-foreground:  hsl(240 15% 8%);
+  /* Secondary = soft sage chip */
+  --secondary:             hsl(148 35% 91%);
+  --secondary-foreground:  hsl(155 18% 12%);
 
-  --muted:                 hsl(252 50% 93%);
-  --muted-foreground:      hsl(240 10% 45%);
+  --muted:                 hsl(145 32% 93%);
+  --muted-foreground:      hsl(150 12% 40%);
 
-  /* Accent = amber — used for price tags, spicy badges, hover hints */
+  /* Accent = amber — prices, badges */
   --accent:                hsl(42 90% 58%);
-  --accent-foreground:     hsl(240 15% 8%);
+  --accent-foreground:     hsl(155 18% 12%);
 
   --destructive:           hsl(0 72% 51%);
-  --border:                hsl(252 35% 88%);
-  --input:                 hsl(252 35% 88%);
-  --ring:                  hsl(250 78% 60%);
+  --border:                hsl(150 28% 86%);
+  --input:                 hsl(150 28% 86%);
+  --ring:                  hsl(158 48% 38%);
   --radius:                0.75rem;
 }
 
@@ -135,33 +132,33 @@
     font-family: var(--font-sarabun), sans-serif;
   }
 
-  /* Draftr-style radial gradient: white fading into soft purple in the center */
+  /* Radial gradient: white into soft mint / sage center */
   .bg-lavender-gradient {
     background: radial-gradient(
       circle at center,
-      #f0edff 0%,
-      #f8f7ff 50%,
+      hsl(145 45% 94%) 0%,
+      hsl(150 35% 97%) 50%,
       #ffffff 100%
     );
   }
 
-  /* Stronger lavender for alternating sections */
+  /* Stronger sage for alternating sections */
   .bg-lavender-mid {
-    background: hsl(252 55% 92%);
+    background: hsl(148 35% 91%);
   }
 
-  /* Violet button glow effect */
+  /* Primary button glow (green) */
   .shadow-violet-glow {
-    box-shadow: 0 8px 32px hsl(250 78% 60% / 0.30),
-                0 2px  8px hsl(250 78% 60% / 0.15);
+    box-shadow: 0 8px 32px hsl(158 48% 38% / 0.28),
+                0 2px  8px hsl(158 48% 38% / 0.12);
   }
 
-  /* Glassmorphism card — white with blur, subtle border */
+  /* Glassmorphism card */
   .glass-card {
     background: hsl(0 0% 100% / 0.80);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid hsl(252 40% 88% / 0.70);
+    border: 1px solid hsl(150 30% 86% / 0.75);
   }
 
   /* Amber accent text (prices, highlights) */
@@ -195,7 +192,7 @@
     left: 0;
     width: 0;
     height: 2px;
-    background: hsl(250 78% 60%);
+    background: hsl(158 48% 38%);
     border-radius: 9999px;
     transition: width 0.25s ease;
   }
@@ -209,7 +206,7 @@
   }
   .card-hover:hover {
     transform: translateY(-4px);
-    box-shadow: 0 16px 40px hsl(250 50% 50% / 0.12);
+    box-shadow: 0 16px 40px hsl(158 40% 40% / 0.12);
   }
 } 
 .no-scrollbar::-webkit-scrollbar { display: none; } 

@@ -1,8 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CATEGORIES, MEATS, SIDES, MenuItem, MeatType, SideType, Category, Deal, ALLERGENS, Allergen } from "@/lib/menuData";
-import { Plus, Search, Filter, Edit2, Trash2, X, Check, Loader2, Tag, AlertTriangle } from "lucide-react";
+import {
+  CATEGORIES,
+  MEATS,
+  SIDES,
+  SPICE_LEVELS,
+  CUSTOMISABLE_CATEGORIES,
+  MenuItem,
+  MeatType,
+  SideType,
+  SpiceLevel,
+  Category,
+  Deal,
+  ALLERGENS,
+  Allergen,
+} from "@/lib/menuData";
+import { Plus, Search, Filter, Edit2, Trash2, X, Check, Loader2, Tag, AlertTriangle, PackagePlus } from "lucide-react";
 import { getDeals } from "@/lib/firebase/deals/service";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -10,7 +24,8 @@ import {
   getMenuItems, 
   addMenuItem, 
   updateMenuItem, 
-  deleteMenuItem 
+  deleteMenuItem,
+  deleteAllMenuItems
 } from "@/lib/firebase/menu/service";
 import {
   Dialog,
@@ -30,6 +45,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FULL_MENU_SEED } from "@/lib/menu/fullMenuSeed";
 
 export default function MenuManagement() {
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -39,6 +55,7 @@ export default function MenuManagement() {
   const [editingItem, setEditingItem] = useState<Partial<MenuItem> | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSeedingFullMenu, setIsSeedingFullMenu] = useState(false);
 
   useEffect(() => {
     fetchMenu();
@@ -56,6 +73,40 @@ export default function MenuManagement() {
       toast.error("Failed to load menu");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const normalizeMenuName = (s: string) =>
+    s.toLowerCase().replace(/\s+/g, " ").trim();
+
+  const importFullMenuBundle = async () => {
+    if (
+      !confirm(
+        "Delete ALL current menu items and replace them with the full menu bundle? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    setIsSeedingFullMenu(true);
+    try {
+      const deleted = await deleteAllMenuItems();
+      let added = 0;
+      for (const row of FULL_MENU_SEED) {
+        await addMenuItem({
+          ...row,
+          availableSpiceLevels: row.availableSpiceLevels ?? [],
+        });
+        added += 1;
+      }
+      toast.success(
+        `Replaced menu: deleted ${deleted} item(s), added ${added} item(s).`
+      );
+      await fetchMenu();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Import failed";
+      toast.error(message);
+    } finally {
+      setIsSeedingFullMenu(false);
     }
   };
 
@@ -89,6 +140,8 @@ export default function MenuManagement() {
           category: editingItem.category as Category,
           availableMeats: editingItem.availableMeats || [],
           availableSides: editingItem.availableSides || [],
+          availableSpiceLevels: editingItem.availableSpiceLevels || [],
+          allergens: editingItem.allergens || [],
           available: true,
           emoji: editingItem.emoji || "🍛",
         });
@@ -138,6 +191,17 @@ export default function MenuManagement() {
     setEditingItem({ ...editingItem, availableSides: updated });
   };
 
+  const handleSpiceToggle = (level: SpiceLevel) => {
+    const current = editingItem?.availableSpiceLevels || [];
+    const updated = current.includes(level)
+      ? current.filter((s) => s !== level)
+      : [...current, level];
+    setEditingItem({ ...editingItem, availableSpiceLevels: updated });
+  };
+
+  const isCustomizableCategory = (c: Category | undefined) =>
+    !!c && CUSTOMISABLE_CATEGORIES.includes(c);
+
   const filteredItems = items.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -151,15 +215,38 @@ export default function MenuManagement() {
           <p className="text-brand-muted font-body">Manage your restaurant's dishes, categories, and meats.</p>
         </div>
         
-        <div 
-          onClick={() => {
-            setEditingItem({ availableMeats: [], availableSides: [], allergens: [], category: 'Main Course', basePrice: 0 });
-            setIsDialogOpen(true);
-          }}
-          className="bg-brand-violet hover:bg-brand-violet-dark text-white rounded-xl font-display font-bold px-6 py-4 shadow-violet-glow flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
-        >
-          <Plus className="w-5 h-5" />
-          Add Menu Item
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSeedingFullMenu}
+            onClick={() => void importFullMenuBundle()}
+            className="inline-flex items-center gap-2 rounded-xl font-display font-semibold border-brand-violet/30"
+          >
+            {isSeedingFullMenu ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <PackagePlus className="w-5 h-5" />
+            )}
+            Replace with full menu
+          </Button>
+          <div
+            onClick={() => {
+              setEditingItem({
+                availableMeats: [],
+                availableSides: [],
+                availableSpiceLevels: [],
+                allergens: [],
+                category: CATEGORIES[0],
+                basePrice: 0,
+              });
+              setIsDialogOpen(true);
+            }}
+            className="bg-brand-violet hover:bg-brand-violet-dark text-white rounded-xl font-display font-bold px-6 py-4 shadow-violet-glow flex items-center gap-2 transition-all active:scale-95 cursor-pointer justify-center"
+          >
+            <Plus className="w-5 h-5" />
+            Add Menu Item
+          </div>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -184,8 +271,17 @@ export default function MenuManagement() {
                 <div className="space-y-2">
                   <Label>Category</Label>
                   <Select 
-                    value={editingItem?.category} 
-                    onValueChange={v => setEditingItem({...editingItem, category: v as Category})}
+                    value={editingItem?.category ?? ""} 
+                    onValueChange={(v) => {
+                      const cat = v as Category;
+                      const next: Partial<MenuItem> = { ...editingItem, category: cat };
+                      if (!CUSTOMISABLE_CATEGORIES.includes(cat)) {
+                        next.availableMeats = [];
+                        next.availableSides = [];
+                        next.availableSpiceLevels = [];
+                      }
+                      setEditingItem(next);
+                    }}
                   >
                     <SelectTrigger className="rounded-xl">
                       <SelectValue placeholder="Select category" />
@@ -231,7 +327,7 @@ export default function MenuManagement() {
                 </div>
               </div>
 
-              {(editingItem?.category === 'Main Course' || editingItem?.category === 'Curry') && (
+              {isCustomizableCategory(editingItem?.category) && (
                 <>
                   <div className="space-y-3">
                     <Label className="text-sm font-bold text-brand-muted uppercase tracking-wider">Meat Options</Label>
@@ -259,7 +355,7 @@ export default function MenuManagement() {
                   <div className="space-y-3">
                     <Label className="text-sm font-bold text-brand-muted uppercase tracking-wider">Side Options</Label>
                     <div className="flex flex-wrap gap-3">
-                      {items.filter(i => i.category === 'Sides').map(sideItem => (
+                      {items.filter(i => i.category === "Sides & Nibbles").map(sideItem => (
                         <label 
                           key={sideItem.id} 
                           htmlFor={`side-${sideItem.id}`}
@@ -282,9 +378,39 @@ export default function MenuManagement() {
                           </span>
                         </label>
                       ))}
-                      {items.filter(i => i.category === 'Sides').length === 0 && (
-                        <p className="text-xs text-brand-muted italic">No items found in 'Sides' category. Add them first!</p>
+                      {items.filter(i => i.category === "Sides & Nibbles").length === 0 && (
+                        <p className="text-xs text-brand-muted italic">
+                          No dishes in &quot;Sides &amp; Nibbles&quot; yet — add those first to use them as side options.
+                        </p>
                       )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-sm font-bold text-brand-muted uppercase tracking-wider">
+                      Spice levels offered
+                    </Label>
+                    <p className="text-xs text-brand-muted">
+                      Customers pick one spice level in the app for stir-fries and curries when you enable options here.
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      {SPICE_LEVELS.map((level) => (
+                        <label
+                          key={level}
+                          htmlFor={`spice-${level}`}
+                          className="flex items-center gap-3 bg-white hover:bg-brand-lavender/10 px-4 py-2.5 rounded-2xl border-2 border-brand-lavender-mid cursor-pointer transition-all active:scale-95 hover:border-brand-violet/30 group"
+                        >
+                          <Checkbox
+                            id={`spice-${level}`}
+                            checked={!!editingItem?.availableSpiceLevels?.includes(level)}
+                            onCheckedChange={() => handleSpiceToggle(level)}
+                            className="shrink-0"
+                          />
+                          <span className="text-sm font-display font-bold text-brand-text group-hover:text-brand-violet transition-colors leading-none">
+                            {level}
+                          </span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                 </>

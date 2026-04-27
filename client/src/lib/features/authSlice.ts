@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 export interface Order {
   id: string;
   date: string;
+  createdAt?: string;
   total: number;
   status: "pending" | "preparing" | "ready" | "delivered" | "cancelled";
   items: { name: string; quantity: number; price: number }[];

@@ -9,6 +9,7 @@ export interface InvoiceItem {
   price: number;
   selectedProtein?: string;
   selectedSide?: string;
+  selectedSpice?: string;
   category?: string;
   total?: number;
 }
@@ -130,9 +131,15 @@ export default function Invoice({ data, onClose }: InvoiceProps) {
                   <tr key={`${item.name}-${idx}`} style={{ backgroundColor: idx % 2 === 0 ? "#f9f9f9" : "#ffffff" }}>
                     <td className="py-3 px-4">
                       <p className="text-xs font-medium">{item.name}</p>
-                      {(item.selectedProtein || item.selectedSide) && (
+                      {(item.selectedProtein || item.selectedSide || item.selectedSpice) && (
                         <p className="text-[9px] text-zinc-500 mt-0.5">
-                          {[item.selectedProtein && `Protein: ${item.selectedProtein}`, item.selectedSide && `Side: ${item.selectedSide}`].filter(Boolean).join("  ·  ")}
+                          {[
+                            item.selectedProtein && `Protein: ${item.selectedProtein}`,
+                            item.selectedSide && `Side: ${item.selectedSide}`,
+                            item.selectedSpice && `Spice: ${item.selectedSpice}`,
+                          ]
+                            .filter(Boolean)
+                            .join("  ·  ")}
                         </p>
                       )}
                     </td>

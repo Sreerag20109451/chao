@@ -322,8 +322,22 @@ export default function Home() {
     <>
       <section className="min-h-[85vh] flex items-center pt-24 pb-16 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none opacity-20 mix-blend-multiply select-none">
-          <Image src="/images/thai_green_curry_1776894985468.png" alt="Green Curry" width={400} height={400} className="absolute -top-20 -left-20 animate-[spin_60s_linear_infinite]" />
-          <Image src="/images/thai_red_curry_1776895006227.png" alt="Red Curry" width={450} height={450} className="absolute top-40 -right-32 animate-[spin_80s_linear_infinite_reverse]" />
+          <Image
+            src="/images/thai_green_curry_1776894985468.png"
+            alt="Green Curry"
+            width={400}
+            height={400}
+            sizes="(max-width: 768px) 70vw, 400px"
+            className="absolute -top-20 -left-20 animate-[spin_60s_linear_infinite]"
+          />
+          <Image
+            src="/images/thai_red_curry_1776895006227.png"
+            alt="Red Curry"
+            width={450}
+            height={450}
+            sizes="(max-width: 768px) 75vw, 450px"
+            className="absolute top-40 -right-32 animate-[spin_80s_linear_infinite_reverse]"
+          />
         </div>
 
         <div className="max-w-6xl mx-auto px-6 text-center relative z-10">

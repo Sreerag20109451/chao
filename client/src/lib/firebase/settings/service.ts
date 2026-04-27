@@ -49,8 +49,8 @@ const DEFAULT_SETTINGS: StoreSettings = {
     "Chicken": { price: 0, available: true },
     "Duck": { price: 1, available: true },
     "Lamb": { price: 2, available: true },
-    "Prawn": { price: 3, available: true },
-    "Beef": { price: 4, available: true },
+    "Prawn": { price: 1, available: true },
+    "Beef": { price: 1, available: true },
   },
 };
 

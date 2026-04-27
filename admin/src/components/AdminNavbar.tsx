@@ -39,11 +39,11 @@ export default function AdminNavbar() {
     <nav
       className={`sticky top-0 inset-x-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-zinc-950 border-b border-white/10 shadow-2xl py-3"
+          ? "bg-sidebar border-b border-sidebar-border shadow-lg py-3"
           : "bg-white/80 backdrop-blur-md border-b border-brand-lavender-mid py-4"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+      <div className="w-full px-4 sm:px-6 md:px-8 flex items-center justify-between">
         {/* ---- Brand / Logo (Mobile Only) ---- */}
         <div className="flex-1 flex justify-start md:hidden">
           <Link

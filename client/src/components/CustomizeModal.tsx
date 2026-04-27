@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -9,7 +9,12 @@ import {
 } from "@/components/ui/dialog";
 import { useDispatch } from "react-redux";
 import { addToCart } from "@/lib/features/cartSlice";
-import { MenuItem } from "@/lib/menuData";
+import {
+  MenuItem,
+  SpiceLevel,
+  EGG_FRIED_RICE_SIDE_SURCHARGE,
+  getSidePriceIncrement,
+} from "@/lib/menuData";
 import { Check, ShoppingCart } from "lucide-react";
 import { useStoreStatus } from "@/hooks/useStoreStatus";
 import { toast } from "sonner";
@@ -29,7 +34,16 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
   const { isOpen: isStoreOpen, settings } = useStoreStatus();
   const [selectedProtein, setSelectedProtein] = useState(item.availableMeats?.[0] || "");
   const [selectedSide, setSelectedSide] = useState(item.availableSides?.[0] || "");
+  const [selectedSpice, setSelectedSpice] = useState<SpiceLevel | "">(
+    (item.availableSpiceLevels?.[0] as SpiceLevel) || ""
+  );
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    setSelectedProtein(item.availableMeats?.[0] || "");
+    setSelectedSide(item.availableSides?.[0] || "");
+    setSelectedSpice((item.availableSpiceLevels?.[0] as SpiceLevel) || "");
+  }, [item.id, item.availableMeats, item.availableSides, item.availableSpiceLevels]);
 
   const getMeatIncrement = (meat: string) => {
     if (!settings?.meatOptions?.[meat]) return 0;
@@ -47,7 +61,10 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
   const availableMeats = getAvailableMeats();
   const effectiveSelectedProtein = availableMeats.includes(selectedProtein) ? selectedProtein : (availableMeats[0] || "");
   
-  const finalPrice = (item.basePrice || 0) + (item.availableMeats?.length ? getMeatIncrement(effectiveSelectedProtein) : 0);
+  const finalPrice =
+    (item.basePrice || 0) +
+    (item.availableMeats?.length ? getMeatIncrement(effectiveSelectedProtein) : 0) +
+    getSidePriceIncrement(item.availableSides?.length ? selectedSide : undefined);
 
   const handleAddToCart = () => {
     if (!isStoreOpen) {
@@ -64,6 +81,7 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
       basePrice: finalPrice,
       selectedProtein: item.availableMeats?.length ? effectiveSelectedProtein : undefined,
       selectedSide: item.availableSides?.length ? selectedSide : undefined,
+      selectedSpice: item.availableSpiceLevels?.length ? selectedSpice || item.availableSpiceLevels[0] : undefined,
     }));
     toast.success(`Added ${item.name} to cart`);
     setIsOpen(false);
@@ -83,6 +101,12 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
           <p className="text-brand-muted text-center font-body text-sm px-4">
             {item.description}
           </p>
+          {item.availableSides?.includes("Jasmine Rice") &&
+            item.availableSides?.includes("Egg Fried Rice") && (
+              <p className="text-center text-[11px] text-brand-muted font-body px-4 -mt-2">
+                Complimentary jasmine rice; egg fried rice +€{EGG_FRIED_RICE_SIDE_SURCHARGE.toFixed(2)}.
+              </p>
+            )}
         </DialogHeader>
 
         <div className="space-y-8 py-6">
@@ -131,10 +155,46 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
                         : "bg-brand-lavender/30 border-brand-lavender-mid text-brand-text hover:border-brand-violet/40"
                     }`}
                   >
-                    {side}
+                    <span>
+                      {side}
+                      {getSidePriceIncrement(side) > 0 && (
+                        <span className="opacity-70 text-[10px] ml-1">
+                          (+€{getSidePriceIncrement(side).toFixed(2)})
+                        </span>
+                      )}
+                    </span>
                     {selectedSide === side && <Check className="w-4 h-4" />}
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {item.availableSpiceLevels && item.availableSpiceLevels.length > 0 && (
+            <div className="space-y-4">
+              <label className="text-xs font-display font-bold text-brand-text uppercase tracking-widest flex items-center justify-between">
+                Spice level
+                <span className="text-[10px] text-brand-violet bg-brand-violet/5 px-2 py-0.5 rounded-full">Required</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {item.availableSpiceLevels.map((level) => {
+                  const effectiveSpice = selectedSpice || item.availableSpiceLevels![0];
+                  return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setSelectedSpice(level)}
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl border font-body text-sm transition-all ${
+                      effectiveSpice === level
+                        ? "bg-brand-violet border-brand-violet text-white shadow-violet-glow scale-[1.02]"
+                        : "bg-brand-lavender/30 border-brand-lavender-mid text-brand-text hover:border-brand-violet/40"
+                    }`}
+                  >
+                    {level}
+                    {effectiveSpice === level && <Check className="w-4 h-4" />}
+                  </button>
+                  );
+                })}
               </div>
             </div>
           )}

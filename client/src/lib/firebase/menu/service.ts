@@ -13,10 +13,13 @@ export const fetchMenuByCategory = async (category: string) => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-export const listenToMenu = (callback: (menu: MenuItem[]) => void) => {
+export const listenToMenu = (
+  callback: (menu: MenuItem[]) => void,
+  onError?: (error: Error) => void
+) => {
   const q = query(collection(db, "menu"));
   return onSnapshot(q, (snapshot) => {
     const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as MenuItem[];
     callback(items);
-  });
+  }, onError);
 };

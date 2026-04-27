@@ -1,20 +1,18 @@
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "@/lib/store";
 import { 
   CreditCard, 
   ChevronLeft, 
-  Plus, 
-  Trash2, 
-  Star,
+  Banknote,
   CheckCircle2,
-  Lock
+  Lock,
+  ArrowRight
 } from "lucide-react";
 
 export default function PaymentsPage() {
   const { user } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
 
   if (!user) return null;
 
@@ -37,32 +35,39 @@ export default function PaymentsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-2 px-2">
-              <h2 className="font-display font-bold text-brand-text text-lg uppercase tracking-wider">Your Cards</h2>
-              <button className="text-brand-violet font-display font-bold text-xs uppercase tracking-widest flex items-center gap-1.5 p-2 rounded-lg hover:bg-brand-violet/5 transition-colors">
-                <Plus className="w-4 h-4" /> Add New
-              </button>
+              <h2 className="font-display font-bold text-brand-text text-lg uppercase tracking-wider">Checkout Options</h2>
             </div>
 
-            {user.paymentMethods.map((pm) => (
-              <div key={pm.id} className={`p-6 rounded-3xl border relative overflow-hidden ${pm.isPrimary ? "bg-zinc-900 border-zinc-800 text-white shadow-2xl" : "bg-white/80 border-brand-lavender-mid text-brand-text"}`}>
-                <div className="flex justify-between items-start mb-10">
-                  <div className={`w-12 h-8 rounded-md flex items-center justify-center ${pm.isPrimary ? "bg-white/10" : "bg-brand-lavender"}`}><CreditCard className={`w-6 h-6 ${pm.isPrimary ? "text-white" : "text-brand-violet"}`} /></div>
-                  {pm.isPrimary && <span className="bg-brand-violet text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded-md shadow-violet-glow">Primary</span>}
+            <div className="p-6 rounded-3xl border bg-white/80 border-brand-lavender-mid text-brand-text">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-10 rounded-xl flex items-center justify-center bg-brand-lavender">
+                  <CreditCard className="w-6 h-6 text-brand-violet" />
                 </div>
-                <div className="space-y-4">
-                  <div className="flex gap-4">
-                    <span className={`font-display font-bold text-lg leading-none ${pm.isPrimary ? "text-white" : "text-brand-text"}`}>**** **** **** {pm.last4}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
-                    <span>{pm.type} Card</span>
-                    <div className="flex gap-2">
-                      {!pm.isPrimary && <button className="p-2 hover:bg-brand-violet/5 rounded-lg text-brand-muted hover:text-brand-violet"><Star className="w-4 h-4" /></button>}
-                      <button className={`p-2 rounded-lg ${pm.isPrimary ? "hover:bg-white/10 text-white/40" : "hover:bg-red-50 text-brand-muted hover:text-red-500"}`}><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  </div>
-                </div>
+                <span className="bg-brand-violet text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded-md">
+                  Stripe
+                </span>
               </div>
-            ))}
+              <h3 className="font-display font-bold text-lg text-brand-text">Card Payment</h3>
+              <p className="font-body text-brand-muted text-sm mt-1">
+                Secure card payment is powered by Stripe Checkout. You will be redirected to Stripe to complete payment.
+              </p>
+              <Link href="/cart" className="mt-4 inline-flex items-center gap-2 text-brand-violet font-display font-bold text-xs uppercase tracking-wider">
+                Go to checkout <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="p-6 rounded-3xl border bg-white/80 border-brand-lavender-mid text-brand-text">
+              <div className="w-12 h-10 rounded-xl flex items-center justify-center bg-brand-lavender mb-4">
+                <Banknote className="w-6 h-6 text-brand-violet" />
+              </div>
+              <h3 className="font-display font-bold text-lg text-brand-text">Cash on Delivery</h3>
+              <p className="font-body text-brand-muted text-sm mt-1">
+                Prefer to pay when your food arrives? Choose Cash on Delivery directly in the cart checkout.
+              </p>
+              <Link href="/cart" className="mt-4 inline-flex items-center gap-2 text-brand-violet font-display font-bold text-xs uppercase tracking-wider">
+                Go to checkout <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
 
           <div className="space-y-8">

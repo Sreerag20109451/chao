@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { subscribeToOrders } from "@/lib/firebase/orders/service";
-import { Bell, ShoppingBag, Volume2, X } from "lucide-react";
+import { subscribeToOrders, updateOrderStatusWithNotification } from "@/lib/firebase/orders/service";
+import { Bell, ShoppingBag, Volume2 } from "lucide-react";
 
 // Generates a short WAV beep as a base64 data URL (no external URL needed)
 function makeBeepUrl(freq = 880, durationSec = 0.25, sampleRate = 22050): string {
@@ -41,21 +41,24 @@ export default function GlobalNotification() {
   const previousOrdersRef = useRef<Set<string>>(new Set());
   const ringtoneRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const promptedForUnlockRef = useRef(false);
 
-  const [showPermissionModal, setShowPermissionModal] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [showEnableSoundButton, setShowEnableSoundButton] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [pendingAlerts, setPendingAlerts] = useState<AlertOrder[]>([]);
+  const [etaMinutesByOrder, setEtaMinutesByOrder] = useState<Record<string, number>>({});
 
-  // On mount: check if sound was previously enabled
+  // On mount: default to sound enabled (ops-friendly).
+  // Browser autoplay policy may still block playback until user interaction.
   useEffect(() => {
-    const wasEnabled = localStorage.getItem("chao_sound_enabled") === "true";
-    if (wasEnabled) {
+    const saved = localStorage.getItem("chao_sound_enabled");
+    if (saved === null) {
+      localStorage.setItem("chao_sound_enabled", "true");
       setSoundEnabled(true);
-    } else {
-      // Show modal after a short delay to let the page settle
-      const t = setTimeout(() => setShowPermissionModal(true), 1500);
-      return () => clearTimeout(t);
+      return;
     }
+
+    setSoundEnabled(saved === "true");
   }, []);
 
   // Build audio element once sound is enabled
@@ -73,29 +76,65 @@ export default function GlobalNotification() {
 
     const unsubscribe = subscribeToOrders((orders) => {
       const currentIds = new Set(orders.map((o) => o.id));
+      const currentPending = orders.filter((o) => o.status === "pending");
+
       if (initialLoadRef.current) {
         initialLoadRef.current = false;
         previousOrdersRef.current = currentIds;
+        // Show pending orders immediately on first load so visual alerts
+        // still work for admins even when sound is disabled or blocked.
+        if (currentPending.length > 0) {
+          setPendingAlerts(currentPending as AlertOrder[]);
+        }
         return;
       }
+
       const newPending = orders.filter(
         (o) => !previousOrdersRef.current.has(o.id) && o.status === "pending"
       );
       if (newPending.length > 0) {
-        setPendingAlerts((prev) => [...prev, ...newPending]);
-        startRingtone();
+        setPendingAlerts((prev) => {
+          const known = new Set(prev.map((item) => item.id));
+          const merged = [...prev];
+          newPending.forEach((order) => {
+            if (!known.has(order.id)) {
+              merged.push(order as AlertOrder);
+            }
+          });
+          return merged;
+        });
       }
       previousOrdersRef.current = currentIds;
     });
     return () => unsubscribe();
   }, [soundEnabled, user]);
 
+  // Keep ringtone in sync with pending alerts.
+  useEffect(() => {
+    if (pendingAlerts.length > 0) {
+      startRingtone();
+    } else {
+      stopRingtone();
+    }
+  }, [pendingAlerts.length, soundEnabled]);
+
   const startRingtone = () => {
     if (ringtoneRef.current) return; // already ringing
-    const play = () => {
+    const play = async () => {
       if (audioRef.current && soundEnabled) {
         audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {});
+        try {
+          await audioRef.current.play();
+          promptedForUnlockRef.current = false;
+        } catch {
+          // Browser may block autoplay even when previously enabled in localStorage.
+          // Show a compact sticky button so user can unlock audio in one click.
+          if (!promptedForUnlockRef.current) {
+            promptedForUnlockRef.current = true;
+            setShowEnableSoundButton(true);
+          }
+          return;
+        }
         // Play second beep after 350ms for ring-ring effect
         setTimeout(() => {
           if (audioRef.current) {
@@ -118,64 +157,47 @@ export default function GlobalNotification() {
   };
 
   const handleEnableSound = () => {
-    // Must play in this click handler to satisfy browser autoplay policy
+    // Must play in this click handler to satisfy browser autoplay policy.
     const beepUrl = makeBeepUrl(880, 0.25);
     const testAudio = new Audio(beepUrl);
     testAudio.volume = 1.0;
     testAudio.play().then(() => {
       audioRef.current = testAudio;
       setSoundEnabled(true);
+      setShowEnableSoundButton(false);
+      promptedForUnlockRef.current = false;
       localStorage.setItem("chao_sound_enabled", "true");
-      setShowPermissionModal(false);
     }).catch((err) => {
       console.error("Audio play failed:", err);
-      // Try anyway
-      setSoundEnabled(true);
-      localStorage.setItem("chao_sound_enabled", "true");
-      setShowPermissionModal(false);
+      setShowEnableSoundButton(true);
     });
   };
 
-  const dismissAll = () => {
-    stopRingtone();
-    setPendingAlerts([]);
+  const handleDecision = async (order: AlertOrder, status: "preparing" | "cancelled", etaMinutes?: number) => {
+    try {
+      await updateOrderStatusWithNotification(order, status, etaMinutes);
+      setPendingAlerts((prev) => prev.filter((item) => item.id !== order.id));
+      setEtaMinutesByOrder((prev) => {
+        const next = { ...prev };
+        delete next[order.id];
+        return next;
+      });
+    } catch (error) {
+      console.error("Failed to update order from notification", error);
+    }
   };
 
   return (
     <>
-      {/* ── Sound Permission Modal (first time) ── */}
-      {showPermissionModal && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-400">
-            <div className="bg-brand-violet p-8 text-center">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Volume2 className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="font-display font-bold text-xl text-white">Enable Sound Alerts</h2>
-              <p className="text-white/70 text-sm font-body mt-2">
-                You'll hear a ringtone whenever a new order arrives.
-              </p>
-            </div>
-            <div className="p-6 space-y-3">
-              <button
-                onClick={handleEnableSound}
-                className="w-full flex items-center justify-center gap-2 bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-xl py-4 transition-all active:scale-95"
-              >
-                <Bell className="w-4 h-4" />
-                Enable Sound Notifications
-              </button>
-              <button
-                onClick={() => {
-                  setShowPermissionModal(false);
-                  localStorage.setItem("chao_sound_enabled", "false");
-                }}
-                className="w-full text-brand-muted font-body text-sm py-2 hover:text-brand-text transition-colors"
-              >
-                Skip (no sound)
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Compact unlock control shown only when autoplay is blocked */}
+      {showEnableSoundButton && (
+        <button
+          onClick={handleEnableSound}
+          className="fixed bottom-6 right-6 z-[310] flex items-center gap-2 bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-full px-4 py-3 shadow-violet-glow transition-all active:scale-95"
+        >
+          <Volume2 className="w-4 h-4" />
+          Enable Ringtone
+        </button>
       )}
 
       {/* ── New Order Alert Modal ── */}
@@ -195,30 +217,52 @@ export default function GlobalNotification() {
 
             <div className="divide-y divide-brand-lavender-mid max-h-64 overflow-y-auto">
               {pendingAlerts.map((order) => (
-                <div key={order.id} className="flex items-center gap-4 p-5">
-                  <div className="w-10 h-10 bg-brand-violet/10 rounded-xl flex items-center justify-center shrink-0">
-                    <ShoppingBag className="w-5 h-5 text-brand-violet" />
+                <div key={order.id} className="p-5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-brand-violet/10 rounded-xl flex items-center justify-center shrink-0">
+                      <ShoppingBag className="w-5 h-5 text-brand-violet" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display font-bold text-brand-text text-sm">
+                        #{order.id.slice(0, 6).toUpperCase()}
+                      </p>
+                      <p className="font-body text-xs text-brand-muted">
+                        {order.customerName || "Guest"} · {(order.orderType || "").toUpperCase()} · €{order.total?.toFixed(2) || "0.00"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-display font-bold text-brand-text text-sm">
-                      #{order.id.slice(0, 6).toUpperCase()}
-                    </p>
-                    <p className="font-body text-xs text-brand-muted">
-                      {order.customerName || "Guest"} · {(order.orderType || "").toUpperCase()} · €{order.total?.toFixed(2) || "0.00"}
-                    </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-brand-lavender/20 border border-brand-lavender-mid">
+                      <span className="text-[10px] font-bold uppercase text-brand-muted">ETA</span>
+                      <input
+                        type="number"
+                        min={5}
+                        value={etaMinutesByOrder[order.id] ?? 20}
+                        onChange={(e) =>
+                          setEtaMinutesByOrder((prev) => ({
+                            ...prev,
+                            [order.id]: Math.max(5, parseInt(e.target.value || "20", 10)),
+                          }))
+                        }
+                        className="w-14 bg-white border border-brand-lavender-mid rounded px-1.5 py-1 text-xs font-bold text-brand-text focus:outline-none"
+                      />
+                      <span className="text-[10px] font-bold uppercase text-brand-muted">min</span>
+                    </div>
+                    <button
+                      onClick={() => handleDecision(order, "preparing", etaMinutesByOrder[order.id] ?? 20)}
+                      className="flex-1 py-2 text-[11px] font-display font-bold uppercase rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
+                    >
+                      Accept + ETA
+                    </button>
+                    <button
+                      onClick={() => handleDecision(order, "cancelled")}
+                      className="flex-1 py-2 text-[11px] font-display font-bold uppercase rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                    >
+                      Reject
+                    </button>
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div className="p-5">
-              <button
-                onClick={dismissAll}
-                className="w-full flex items-center justify-center gap-2 bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-xl py-4 transition-all active:scale-95"
-              >
-                <X className="w-4 h-4" />
-                Acknowledge &amp; Dismiss
-              </button>
             </div>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { listenToStoreSettings, toggleStoreStatus, initStoreSettings } from "@/lib/firebase/settings/service";
 import { listenToMenu } from "@/lib/firebase/menu/service";
 import { subscribeToOrders } from "@/lib/firebase/orders/service";
+import { getDashboardOrderSummary } from "@/lib/orders/summary";
 
 export default function DashboardPage() {
   const [isAcceptingOrders, setIsAcceptingOrders] = useState(true);
@@ -44,25 +45,8 @@ export default function DashboardPage() {
     }
   };
 
-  const today = new Date().setHours(0, 0, 0, 0);
-  const todaysOrders = orders.filter(o => {
-    if (!o.createdAt) return true;
-    const orderDate = new Date(o.createdAt.seconds * 1000).setHours(0, 0, 0, 0);
-    return orderDate === today;
-  });
-
-  const activeTodaysOrders = todaysOrders.filter(o => o.status !== "cancelled");
-  const todaysRevenue = activeTodaysOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-  
-  // Weekly aggregation
-  const now = new Date();
-  const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-  const weeklyOrders = orders.filter(o => {
-    if (!o.createdAt) return true;
-    const orderDate = new Date(o.createdAt.seconds * 1000);
-    return orderDate >= startOfWeek && o.status !== "cancelled";
-  });
-  const weeklyRevenue = weeklyOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const { activeTodaysOrders, todaysRevenue, weeklyOrders, weeklyRevenue } =
+    getDashboardOrderSummary(orders);
 
   const stats = [
     {
@@ -156,7 +140,7 @@ export default function DashboardPage() {
              <CardTitle className="font-display font-bold text-lg text-brand-text">Recent Orders Today</CardTitle>
            </CardHeader>
            <CardContent className="p-0 overflow-y-auto max-h-[400px]">
-             {todaysOrders.length === 0 ? (
+             {activeTodaysOrders.length === 0 ? (
                <div className="flex flex-col items-center justify-center text-center p-6 min-h-[200px]">
                  <div className="w-16 h-16 rounded-full bg-brand-violet/10 flex items-center justify-center mb-4">
                     <ShoppingBag className="w-8 h-8 text-brand-violet opacity-50" />
@@ -165,7 +149,7 @@ export default function DashboardPage() {
                </div>
              ) : (
                <div className="divide-y divide-brand-lavender-mid">
-                 {todaysOrders.slice(0, 10).map(order => {
+                 {activeTodaysOrders.slice(0, 10).map(order => {
                     const orderDate = order.createdAt ? new Date(order.createdAt.seconds * 1000) : new Date();
                     const timeStr = orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     return (

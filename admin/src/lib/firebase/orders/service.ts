@@ -1,4 +1,17 @@
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+  onSnapshot,
+  doc,
+  updateDoc,
+  getDoc,
+  getDocs,
+  where,
+  limit,
+} from "firebase/firestore";
 import { db } from "../config";
 
 export interface OrderData {
@@ -26,4 +39,73 @@ export const subscribeToOrders = (callback: (orders: any[]) => void) => {
     const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(orders);
   });
+};
+
+const resolveClientUid = async (order: any) => {
+  const rawUserId = order?.userId;
+  if (!rawUserId || typeof rawUserId !== "string") return null;
+
+  const directDoc = await getDoc(doc(db, "users", rawUserId));
+  if (directDoc.exists()) return directDoc.id;
+
+  const emailLookup = query(
+    collection(db, "users"),
+    where("email", "==", rawUserId),
+    limit(1)
+  );
+  const emailResult = await getDocs(emailLookup);
+  if (!emailResult.empty) return emailResult.docs[0].id;
+
+  return null;
+};
+
+const createClientNotification = async (
+  order: any,
+  status: OrderData["status"],
+  etaMinutes?: number
+) => {
+  const uid = await resolveClientUid(order);
+  if (!uid) return;
+
+  const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+  const isRejected = status === "cancelled";
+
+  await addDoc(collection(db, "users", uid, "notifications"), {
+    orderId: order.id,
+    title: isRejected ? "Order rejected" : `Order ${statusText}`,
+    message: isRejected
+      ? `Your order #${order.id.slice(0, 8).toUpperCase()} was rejected by the restaurant.`
+      : status === "preparing" && etaMinutes
+      ? `Your order #${order.id.slice(0, 8).toUpperCase()} is being prepared. ETA: ${etaMinutes} minutes.`
+      : `Your order #${order.id.slice(0, 8).toUpperCase()} is now ${status}.`,
+    type: isRejected ? "error" : "info",
+    etaMinutes: etaMinutes || null,
+    read: false,
+    createdAt: serverTimestamp(),
+  });
+
+  await updateDoc(doc(db, "users", uid), {
+    notificationsUpdatedAt: serverTimestamp(),
+  });
+};
+
+export const updateOrderStatusWithNotification = async (
+  order: any,
+  status: OrderData["status"],
+  etaMinutes?: number
+) => {
+  // Always prioritize operational status updates in the orders collection.
+  // Notification writes are best-effort and should not block Accept/Reject.
+  await updateDoc(doc(db, "orders", order.id), {
+    status,
+    ...(status === "preparing" && etaMinutes ? { requestedPickupTime: etaMinutes } : {}),
+  });
+
+  try {
+    await createClientNotification(order, status, etaMinutes);
+  } catch (notificationError) {
+    // Do not throw here: admin order flow must continue even if notification
+    // permissions or lookup fail for a particular user record.
+    console.error("Order status updated, but notification failed:", notificationError);
+  }
 };

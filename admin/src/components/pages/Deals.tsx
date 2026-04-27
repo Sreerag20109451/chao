@@ -37,6 +37,12 @@ export default function DealsPage() {
     item.category.toLowerCase().includes(itemSearchTerm.toLowerCase())
   );
 
+  const isDealExpired = (deal: Deal) => {
+    const end = new Date(deal.endDate);
+    end.setHours(23, 59, 59, 999);
+    return new Date() > end;
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -275,7 +281,12 @@ export default function DealsPage() {
                 <div className="w-12 h-12 rounded-2xl bg-brand-violet/10 flex items-center justify-center text-brand-violet">
                   <Tag className="w-6 h-6" />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  {isDealExpired(deal) && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-red-100 text-red-700 border border-red-200">
+                      Expired
+                    </span>
+                  )}
                   <button onClick={() => { setEditingDeal(deal); setIsDialogOpen(true); }} className="p-2 text-brand-muted hover:text-brand-violet hover:bg-brand-lavender/50 rounded-lg">
                     <Edit2 className="w-4 h-4" />
                   </button>

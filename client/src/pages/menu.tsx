@@ -1,20 +1,82 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MenuCard from "@/components/MenuCard";
 import { categories, MenuItem, Deal } from "@/lib/menuData";
 import { listenToMenu } from "@/lib/firebase/menu/service";
 import { listenToDeals } from "@/lib/firebase/deals/service";
-import { Flame as FlameIcon, Leaf as LeafIcon, ChefHat as ChefHatIcon, WheatOff as WheatOffIcon, Utensils, Loader2 } from "lucide-react";
+import { Utensils, Loader2 } from "lucide-react";
+
+const normalizeCategory = (category: string | undefined) =>
+  (category ?? "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const categoryMatchers: Record<string, (category: string) => boolean> = {
+  Beverages: (category) => /\b(beverage|beverages|drink|drinks)\b/.test(category),
+  "Sides & Nibbles": (category) => /\b(side|sides|nibble|nibbles)\b/.test(category),
+  "Vegan Specials": (category) => /\b(vegan|plant based|plant)\b/.test(category),
+  "Fried rice & Noodles": (category) =>
+    /\b(noodle|noodles)\b/.test(category) || /\b(fried rice|rice noodles|rice and noodles)\b/.test(category),
+  "Classic Thai Stir-Fries": (category) => /\b(stir|stir fry|stir fries|stirfries)\b/.test(category),
+  "Popular Thai Curries": (category) => /\b(curry|curries)\b/.test(category),
+  "Chao Kids specials": (category) => /\b(kid|kids|children|childrens)\b/.test(category),
+  "Starters & Soups": (category) => /\b(starter|starters|soup|soups)\b/.test(category),
+};
+
+const reversedCategoryOrder = [
+  "Starters & Soups",
+  "Chao Kids specials",
+  "Popular Thai Curries",
+  "Classic Thai Stir-Fries",
+  "Fried rice & Noodles",
+  "Vegan Specials",
+  "Sides & Nibbles",
+  "Beverages",
+];
+
+const menuCategories = [
+  categories.find((category) => category.id === "all"),
+  ...reversedCategoryOrder
+    .map((categoryId) => categories.find((category) => category.id === categoryId))
+    .filter(Boolean),
+].filter((category): category is (typeof categories)[number] => Boolean(category));
+
+const categoryMatches = (itemCategory: string | undefined, activeCategory: string) => {
+  if (activeCategory === "all") return true;
+
+  const normalizedItemCategory = normalizeCategory(itemCategory);
+  const normalizedActiveCategory = normalizeCategory(activeCategory);
+
+  if (normalizedItemCategory === normalizedActiveCategory) return true;
+  return categoryMatchers[activeCategory]?.(normalizedItemCategory) ?? false;
+};
+
+const getCategorySortIndex = (itemCategory: string | undefined) => {
+  const normalizedItemCategory = normalizeCategory(itemCategory);
+  const categoryIndex = reversedCategoryOrder.findIndex((category) => {
+    if (normalizedItemCategory === normalizeCategory(category)) return true;
+    return categoryMatchers[category]?.(normalizedItemCategory) ?? false;
+  });
+
+  return categoryIndex === -1 ? reversedCategoryOrder.length : categoryIndex;
+};
 
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [items, setItems] = useState<MenuItem[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribeMenu = listenToMenu((data) => {
       setItems(data);
+      setLoadError(null);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Menu load error:", error);
+      setLoadError("We couldn't load the menu right now. Please try again shortly.");
       setIsLoading(false);
     });
     const unsubscribeDeals = listenToDeals((data) => {
@@ -27,10 +89,11 @@ export default function MenuPage() {
   }, []);
 
   const filtered = items
-    .filter((item) => item.available !== false) // Default to true if missing
-    .filter((item) => 
-      activeCategory === "all" ? true : item.category === activeCategory
-    );
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => item.available !== false) // Default to true if missing
+    .filter(({ item }) => categoryMatches(item.category, activeCategory))
+    .sort((a, b) => getCategorySortIndex(a.item.category) - getCategorySortIndex(b.item.category) || a.index - b.index)
+    .map(({ item }) => item);
 
   if (isLoading) {
     return (
@@ -56,32 +119,42 @@ export default function MenuPage() {
           </p>
         </header>
 
-        <Tabs
-          value={activeCategory}
-          onValueChange={setActiveCategory}
-          className="mb-10"
-        >
-          <div className="w-full overflow-x-auto pb-4 -mb-4 no-scrollbar flex justify-start md:justify-center">
-            <TabsList className="inline-flex h-auto gap-2 bg-white/60 border border-brand-lavender-mid rounded-2xl p-2 whitespace-nowrap">
-              {categories.map((cat) => (
-                <TabsTrigger
-                  key={cat.id}
-                  value={cat.id}
-                  className="font-display font-bold text-xs uppercase tracking-wider rounded-xl data-[state=active]:bg-brand-violet data-[state=active]:text-white data-[state=active]:shadow-violet-glow px-6 py-2.5 transition-all whitespace-nowrap"
-                >
-                  {cat.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+        <div className="mb-10 w-full overflow-x-auto no-scrollbar">
+          <div className="flex w-max min-w-full justify-start px-3 py-1 md:justify-center">
+            <div className="flex w-max shrink-0 gap-2 whitespace-nowrap rounded-2xl border border-brand-lavender-mid bg-white/60 p-2">
+              {menuCategories.map((cat) => {
+                const isActive = activeCategory === cat.id;
+
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setActiveCategory(cat.id)}
+                    aria-pressed={isActive}
+                    className={`shrink-0 rounded-xl px-6 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-all ${
+                      isActive
+                        ? "bg-brand-violet text-white shadow-violet-glow"
+                        : "text-brand-muted hover:bg-brand-lavender hover:text-brand-violet"
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </Tabs>
+        </div>
 
 
         <p className="font-body text-sm text-brand-muted mb-6">
           Showing <strong>{filtered.length}</strong> dishes
         </p>
 
-        {filtered.length > 0 ? (
+        {loadError ? (
+          <p className="font-body text-center text-red-600 py-20 text-lg">
+            {loadError}
+          </p>
+        ) : filtered.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filtered.map((item) => (
               <MenuCard key={item.id} item={item} deals={deals} />

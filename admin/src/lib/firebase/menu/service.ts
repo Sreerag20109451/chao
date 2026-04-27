@@ -8,6 +8,7 @@ import {
   query, 
   orderBy,
   onSnapshot,
+  writeBatch,
   serverTimestamp 
 } from "firebase/firestore";
 import { db } from "../config";
@@ -58,4 +59,20 @@ export const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => 
 export const deleteMenuItem = async (id: string) => {
   const itemRef = doc(db, MENU_COLLECTION, id);
   return await deleteDoc(itemRef);
+};
+
+export const deleteAllMenuItems = async () => {
+  const snapshot = await getDocs(collection(db, MENU_COLLECTION));
+  const batches = [];
+
+  for (let i = 0; i < snapshot.docs.length; i += 450) {
+    const batch = writeBatch(db);
+    snapshot.docs.slice(i, i + 450).forEach((menuDoc) => {
+      batch.delete(menuDoc.ref);
+    });
+    batches.push(batch.commit());
+  }
+
+  await Promise.all(batches);
+  return snapshot.docs.length;
 };

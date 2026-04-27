@@ -1,47 +1,83 @@
-export type Category = 'Starter' | 'Main Course' | 'Drink' | 'Dessert' | 'Sides' | 'Curry';
+export type Category =
+  | "Beverages"
+  | "Sides & Nibbles"
+  | "Vegan Specials"
+  | "Fried rice & Noodles"
+  | "Classic Thai Stir-Fries"
+  | "Popular Thai Curries"
+  | "Chao Kids specials"
+  | "Starters & Soups";
 
 export const CATEGORIES: Category[] = [
-  'Starter',
-  'Main Course',
-  'Drink',
-  'Dessert',
-  'Sides',
-  'Curry'
+  "Beverages",
+  "Sides & Nibbles",
+  "Vegan Specials",
+  "Fried rice & Noodles",
+  "Classic Thai Stir-Fries",
+  "Popular Thai Curries",
+  "Chao Kids specials",
+  "Starters & Soups",
 ];
 
-export type MeatType = 'Tofu' | 'Paneer' | 'Chicken' | 'Duck' | 'Lamb' | 'Prawn' | 'Beef';
-
-export const MEATS: MeatType[] = [
-  'Tofu',
-  'Paneer',
-  'Chicken',
-  'Duck',
-  'Lamb',
-  'Prawn',
-  'Beef'
+/** POS / client: dishes in these categories can offer protein, side & spice options. */
+export const CUSTOMISABLE_CATEGORIES: Category[] = [
+  "Classic Thai Stir-Fries",
+  "Popular Thai Curries",
 ];
 
-export type SideType = 'Jasmine Rice' | 'Egg Fried Rice' | 'Brown Rice' | 'Chips' | 'Rice Noodles';
+export type MeatType = "Tofu" | "Paneer" | "Chicken" | "Duck" | "Lamb" | "Prawn" | "Beef";
+
+export const MEATS: MeatType[] = ["Tofu", "Paneer", "Chicken", "Duck", "Lamb", "Prawn", "Beef"];
+
+export type SideType = "Jasmine Rice" | "Egg Fried Rice" | "Brown Rice" | "Chips" | "Rice Noodles";
 
 export const SIDES: SideType[] = [
-  'Jasmine Rice',
-  'Egg Fried Rice',
-  'Brown Rice',
-  'Chips',
-  'Rice Noodles'
+  "Jasmine Rice",
+  "Egg Fried Rice",
+  "Brown Rice",
+  "Chips",
+  "Rice Noodles",
 ];
 
-export type Allergen = 'Gluten' | 'Dairy/Milk' | 'Nuts' | 'Crustaceans' | 'Soy' | 'Eggs' | 'Vegan' | 'Vegetarian';
+export type SpiceLevel = "Mild" | "Medium" | "Hot" | "Thai Hot";
+
+export const SPICE_LEVELS: SpiceLevel[] = ["Mild", "Medium", "Hot", "Thai Hot"];
+
+/** Extra € when customer chooses egg fried rice with a dish that offers rice sides. */
+export const EGG_FRIED_RICE_SIDE_SURCHARGE = 1;
+
+export function getSidePriceIncrement(side: string | undefined): number {
+  if (side === "Egg Fried Rice") return EGG_FRIED_RICE_SIDE_SURCHARGE;
+  return 0;
+}
+
+export type Allergen =
+  | "Gluten"
+  | "Dairy/Milk"
+  | "Eggs"
+  | "Fish"
+  | "Crustaceans"
+  | "Molluscs"
+  | "Soy"
+  | "Sesame"
+  | "Peanuts"
+  | "Nuts"
+  | "Vegan"
+  | "Vegetarian";
 
 export const ALLERGENS: Allergen[] = [
-  'Gluten',
-  'Dairy/Milk',
-  'Nuts',
-  'Crustaceans',
-  'Soy',
-  'Eggs',
-  'Vegan',
-  'Vegetarian'
+  "Gluten",
+  "Dairy/Milk",
+  "Eggs",
+  "Fish",
+  "Crustaceans",
+  "Molluscs",
+  "Soy",
+  "Sesame",
+  "Peanuts",
+  "Nuts",
+  "Vegan",
+  "Vegetarian",
 ];
 
 export interface MenuItem {
@@ -52,6 +88,7 @@ export interface MenuItem {
   category: Category;
   availableMeats: MeatType[];
   availableSides: SideType[];
+  availableSpiceLevels?: SpiceLevel[];
   allergens?: Allergen[];
   available: boolean;
   isDeal?: boolean;

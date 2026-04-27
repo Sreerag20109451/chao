@@ -1,7 +1,7 @@
 /* ============================================================
    CHAO Admin Dashboard — Global Styles
-   Same lavender/violet palette as the client site for brand consistency.
-   Admin uses a clean sidebar layout rather than the full-page hero style.
+   Palette aligned with the client site: soft mint / sage, emerald primary, amber accent.
+   Token names brand-violet / brand-lavender kept for Tailwind class compatibility.
    ============================================================ */
 
 @import "tailwindcss";
@@ -38,16 +38,15 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-ring:         var(--sidebar-ring);
 
-  /* Brand palette tokens */
-  --color-brand-violet:        hsl(250 78% 60%);
-  --color-brand-violet-dark:   hsl(250 78% 45%);
+  /* Brand palette — same HSL values as client/src/styles/globals.css */
+  --color-brand-violet:        hsl(158 48% 38%);
+  --color-brand-violet-dark:   hsl(158 52% 28%);
   --color-brand-amber:         hsl(42 90% 58%);
-  --color-brand-lavender:      hsl(252 60% 95%);
-  --color-brand-lavender-mid:  hsl(252 55% 92%);
-  --color-brand-text:          hsl(240 15% 8%);
-  --color-brand-muted:         hsl(240 10% 45%);
+  --color-brand-lavender:      hsl(145 42% 96%);
+  --color-brand-lavender-mid:  hsl(148 35% 91%);
+  --color-brand-text:          hsl(155 18% 12%);
+  --color-brand-muted:         hsl(150 12% 40%);
 
-  /* Admin fonts — Bai Jamjuree for UI labels, Sarabun for data */
   --font-display: var(--font-bai-jamjuree);
   --font-sans:    var(--font-sarabun);
   --font-mono:    var(--font-geist-mono);
@@ -61,35 +60,35 @@
 }
 
 :root {
-  --background:            hsl(252 60% 95%);
-  --foreground:            hsl(240 15% 8%);
+  --background:            hsl(145 42% 96%);
+  --foreground:            hsl(155 18% 12%);
   --card:                  hsl(0 0% 100%);
-  --card-foreground:       hsl(240 15% 8%);
+  --card-foreground:       hsl(155 18% 12%);
   --popover:               hsl(0 0% 100%);
-  --popover-foreground:    hsl(240 15% 8%);
-  --primary:               hsl(250 78% 60%);
+  --popover-foreground:    hsl(155 18% 12%);
+  --primary:               hsl(158 48% 38%);
   --primary-foreground:    hsl(0 0% 100%);
-  --secondary:             hsl(252 55% 92%);
-  --secondary-foreground:  hsl(240 15% 8%);
-  --muted:                 hsl(252 50% 93%);
-  --muted-foreground:      hsl(240 10% 45%);
+  --secondary:             hsl(148 35% 91%);
+  --secondary-foreground:  hsl(155 18% 12%);
+  --muted:                 hsl(145 32% 93%);
+  --muted-foreground:      hsl(150 12% 40%);
   --accent:                hsl(42 90% 58%);
-  --accent-foreground:     hsl(240 15% 8%);
+  --accent-foreground:     hsl(155 18% 12%);
   --destructive:           hsl(0 72% 51%);
-  --border:                hsl(252 35% 88%);
-  --input:                 hsl(252 35% 88%);
-  --ring:                  hsl(250 78% 60%);
+  --border:                hsl(150 28% 86%);
+  --input:                 hsl(150 28% 86%);
+  --ring:                  hsl(158 48% 38%);
   --radius:                0.75rem;
 
-  /* Admin sidebar — dark violet for authority and contrast */
-  --sidebar:                        hsl(240 15% 8%);
-  --sidebar-foreground:             hsl(252 40% 88%);
-  --sidebar-primary:                hsl(250 78% 60%);
+  /* Sidebar — deep sage, primary CTA matches brand */
+  --sidebar:                        hsl(155 22% 10%);
+  --sidebar-foreground:             hsl(145 35% 92%);
+  --sidebar-primary:                hsl(158 48% 38%);
   --sidebar-primary-foreground:     hsl(0 0% 100%);
-  --sidebar-accent:                 hsl(240 12% 14%);
-  --sidebar-accent-foreground:      hsl(252 40% 90%);
-  --sidebar-border:                 hsl(240 12% 16%);
-  --sidebar-ring:                   hsl(250 78% 60%);
+  --sidebar-accent:                 hsl(155 18% 16%);
+  --sidebar-accent-foreground:      hsl(145 35% 94%);
+  --sidebar-border:                 hsl(155 16% 18%);
+  --sidebar-ring:                   hsl(158 48% 38%);
 }
 
 @layer base {
@@ -120,15 +119,19 @@
   .bg-lavender-gradient {
     background: radial-gradient(
       circle at center,
-      #f0edff 0%,
-      #f8f7ff 50%,
+      hsl(145 45% 94%) 0%,
+      hsl(150 35% 97%) 50%,
       #ffffff 100%
     );
   }
 
+  .bg-lavender-mid {
+    background: hsl(148 35% 91%);
+  }
+
   .shadow-violet-glow {
-    box-shadow: 0 8px 32px hsl(250 78% 60% / 0.30),
-                0 2px  8px hsl(250 78% 60% / 0.15);
+    box-shadow: 0 8px 32px hsl(158 48% 38% / 0.28),
+                0 2px  8px hsl(158 48% 38% / 0.12);
   }
 
   .card-hover {
@@ -136,7 +139,7 @@
   }
   .card-hover:hover {
     transform: translateY(-4px);
-    box-shadow: 0 16px 40px hsl(250 50% 50% / 0.12);
+    box-shadow: 0 16px 40px hsl(158 40% 40% / 0.12);
   }
 
   .pill-badge {
@@ -144,7 +147,7 @@
     align-items: center;
     gap: 0.375rem;
     padding: 0.3rem 0.9rem;
-    background: hsl(240 15% 8%);
+    background: hsl(155 22% 10%);
     color: hsl(0 0% 100%);
     border-radius: 9999px;
     font-size: 0.8125rem;
@@ -174,14 +177,14 @@
     width: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(0, 0, 0, 0.04);
     border-radius: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(109, 40, 217, 0.2);
+    background: hsl(158 48% 38% / 0.22);
     border-radius: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(109, 40, 217, 0.4);
+    background: hsl(158 48% 38% / 0.38);
   }
 }

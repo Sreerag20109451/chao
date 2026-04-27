@@ -2,6 +2,21 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ──────────────────────────────────────────────────────────────────────────
+    // Shared auth/role helpers
+    // ──────────────────────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Accept both legacy `userrole` and newer `role` field names.
+    function isAdmin() {
+      return isSignedIn()
+        && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userrole == 'admin'
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        );
+    }
 
     // ─── Public read collections ─────────────────────────────────────────────
     // Anyone (logged in or not) can read menu, deals, and settings.
@@ -9,38 +24,39 @@ service cloud.firestore {
 
     match /menu/{itemId} {
       allow read: if true;
-      allow write: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userrole == 'admin';
+      allow write: if isAdmin();
     }
 
     match /deals/{dealId} {
       allow read: if true;
-      allow write: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userrole == 'admin';
+      allow write: if isAdmin();
     }
 
     match /settings/{docId} {
       allow read: if true;
-      allow write: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userrole == 'admin';
+      allow write: if isAdmin();
     }
 
     // ─── Orders ──────────────────────────────────────────────────────────────
     match /orders/{orderId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isSignedIn();
     }
 
     // ─── Users ───────────────────────────────────────────────────────────────
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow read: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userrole == 'admin';
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if isAdmin();
+    }
+
+    // ─── User notifications ──────────────────────────────────────────────────
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if isAdmin();
     }
 
     // ─── Drivers ─────────────────────────────────────────────────────────────
     match /drivers/{driverId} {
-      allow read, write: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userrole == 'admin';
+      allow read, write: if isAdmin();
     }
   }
 }

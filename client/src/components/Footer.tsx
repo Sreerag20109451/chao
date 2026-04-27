@@ -43,7 +43,7 @@ export default function Footer() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm overflow-hidden border border-brand-lavender-mid p-1.5">
-                <Image src="/logo.png" alt="Chao Logo" width={32} height={32} className="object-contain" />
+                <Image src="/logo.png" alt="Chao Logo" width={32} height={32} sizes="32px" className="object-contain" />
               </div>
               <span className="font-display font-bold text-2xl text-brand-text tracking-tight">Chao</span>
             </div>

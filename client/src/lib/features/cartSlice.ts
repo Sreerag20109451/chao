@@ -6,6 +6,7 @@ export interface CartItem extends MenuItem {
   quantity: number;
   selectedProtein?: string;
   selectedSide?: string;
+  selectedSpice?: string;
 }
 
 interface CartState {
@@ -23,19 +24,20 @@ const cartSlice = createSlice({
   initialState,
   reducers: {
     addToCart: (state, action: PayloadAction<Omit<CartItem, "cartId" | "quantity">>) => {
-      const { id, selectedProtein, selectedSide } = action.payload;
+      const { id, selectedProtein, selectedSide, selectedSpice } = action.payload;
       
       const existingItem = state.items.find(
         (item) => 
           item.id === id && 
           item.selectedProtein === selectedProtein && 
-          item.selectedSide === selectedSide
+          item.selectedSide === selectedSide &&
+          item.selectedSpice === selectedSpice
       );
 
       if (existingItem) {
         existingItem.quantity += 1;
       } else {
-        const cartId = `${id}-${selectedProtein || "none"}-${selectedSide || "none"}`;
+        const cartId = `${id}-${selectedProtein || "none"}-${selectedSide || "none"}-${selectedSpice || "none"}`;
         const newItem = { ...action.payload, cartId, quantity: 1 };
         // Strip non-serializable Firestore Timestamps
         delete (newItem as any).createdAt;

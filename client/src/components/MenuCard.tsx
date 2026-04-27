@@ -1,6 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import type { MenuItem, Allergen, Deal } from "@/lib/menuData";
-import { Flame, Leaf, ChefHat, WheatOff, Plus, AlertTriangle, Check, Tag } from "lucide-react";
+import { type MenuItem, type Deal, menuItemHasCustomizationOptions } from "@/lib/menuData";
+import { Plus, AlertTriangle, Tag } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/lib/store";
 import { useRouter } from "next/router";
@@ -8,53 +7,6 @@ import { addToCart } from "@/lib/features/cartSlice";
 import CustomizeModal from "./CustomizeModal";
 import { useStoreStatus } from "@/hooks/useStoreStatus";
 import { toast } from "sonner";
-
-/* ---- Allergen display config ---- */
-const allergenConfig: Record<
-  Allergen,
-  { label: string; icon: React.ReactNode; className: string }
-> = {
-  "Dairy/Milk": {
-    label: "Dairy",
-    icon: <AlertTriangle className="w-3 h-3" />,
-    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
-  },
-  "Eggs": {
-    label: "Eggs",
-    icon: <AlertTriangle className="w-3 h-3" />,
-    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
-  },
-  "Nuts": {
-    label: "Nuts",
-    icon: <AlertTriangle className="w-3 h-3" />,
-    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
-  },
-  "Crustaceans": {
-    label: "Crustaceans",
-    icon: <AlertTriangle className="w-3 h-3" />,
-    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
-  },
-  "Soy": {
-    label: "Soy",
-    icon: <AlertTriangle className="w-3 h-3" />,
-    className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
-  },
-  "Gluten": {
-    label: "GF",
-    icon: <Check className="w-3 h-3" />,
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50",
-  },
-  "Vegan": {
-    label: "Vegan",
-    icon: <Leaf className="w-3 h-3" />,
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50",
-  },
-  "Vegetarian": {
-    label: "Veg",
-    icon: <Leaf className="w-3 h-3" />,
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50",
-  },
-};
 
 interface MenuCardProps {
   item: MenuItem;
@@ -66,35 +18,30 @@ export default function MenuCard({ item, deals }: MenuCardProps) {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { isOpen } = useStoreStatus();
 
-  const hasOptions = !!(item.availableMeats?.length || item.availableSides?.length);
+  const hasOptions = menuItemHasCustomizationOptions(item);
 
+  // Updated to support admin deal structure (dealPrice, items)
   const getEffectivePrice = () => {
     if (!deals || deals.length === 0) return item.basePrice || 0;
-    
     const now = new Date();
+    // Find active deals that include this item
     const applicableDeals = deals.filter(deal => {
       const start = new Date(deal.startDate);
       const end = new Date(deal.endDate);
       end.setHours(23, 59, 59, 999);
       if (now < start || now > end) return false;
-      if (deal.applicableCategories && deal.applicableCategories.includes(item.category)) return true;
-      if (deal.applicableItems && deal.applicableItems.includes(item.id)) return true;
+      // Admin deals: items is an array of item IDs
+      if (deal.items && Array.isArray(deal.items) && deal.items.includes(item.id)) return true;
       return false;
     });
-
     if (applicableDeals.length === 0) return item.basePrice || 0;
-
+    // Use the lowest dealPrice among applicable deals
     let lowestPrice = item.basePrice || 0;
     applicableDeals.forEach(deal => {
-      let dealPrice = item.basePrice || 0;
-      if (deal.type === 'fixed_price') {
-        dealPrice = deal.value;
-      } else if (deal.type === 'discount') {
-        dealPrice = (item.basePrice || 0) * (1 - deal.value / 100);
+      if (typeof deal.dealPrice === 'number' && deal.dealPrice < lowestPrice) {
+        lowestPrice = deal.dealPrice;
       }
-      if (dealPrice < lowestPrice) lowestPrice = dealPrice;
     });
-
     return lowestPrice;
   };
 

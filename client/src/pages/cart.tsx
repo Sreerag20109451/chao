@@ -39,6 +39,11 @@ export default function CartPage() {
 
   const [phone, setPhone] = useState(user?.phone || "");
   const [pickupMinutes, setPickupMinutes] = useState(20);
+  // Checkout supports two real payment paths:
+  // - cod: keep existing in-app order placement
+  // - card: redirect to Stripe Checkout
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "card">("cod");
+  const [isCardProcessing, setIsCardProcessing] = useState(false);
   
   useEffect(() => {
     if (settings?.minPrepTime && pickupMinutes < settings.minPrepTime) {
@@ -56,11 +61,69 @@ export default function CartPage() {
   const total = subtotal + serviceCharge + deliveryFee;
 
   const currentAddress = user?.addresses[user?.primaryAddressIndex || 0];
-  const isCheckoutDisabled = !isStoreOpen || !phone.trim() || (orderType === "delivery" && !currentAddress);
+  const isCheckoutDisabled =
+    !isStoreOpen || !phone.trim() || (orderType === "delivery" && !currentAddress);
 
   useEffect(() => {
     if (user?.phone && !phone) setPhone(user.phone);
   }, [user?.phone, phone]);
+
+  /**
+   * Uses Stripe Checkout for card payments.
+   * We persist a draft payload in sessionStorage so the success page
+   * can safely write the paid order to Firestore after verification.
+   */
+  const startCardCheckout = async () => {
+    const currentUid = auth.currentUser?.uid;
+    if (!currentUid) {
+      toast.error("Please log in before placing an order.");
+      return;
+    }
+
+    const checkoutDraft = {
+      userId: currentUid,
+      items,
+      subtotal,
+      serviceCharge,
+      deliveryFee,
+      total,
+      orderType,
+      address: orderType === "delivery" ? currentAddress ?? null : null,
+      customerName: user?.name || "Guest",
+      customerPhone: (phone ?? user?.phone) || null,
+      requestedPickupTime: orderType === "collection" ? pickupMinutes : null,
+    };
+
+    sessionStorage.setItem("stripe_checkout_draft", JSON.stringify(checkoutDraft));
+    setIsCardProcessing(true);
+
+    try {
+      const response = await fetch("/api/payments/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items,
+          orderType,
+          deliveryFee,
+          serviceCharge,
+          customerName: user?.name || "Guest",
+          customerPhone: (phone ?? user?.phone) || null,
+          address: orderType === "delivery" ? currentAddress ?? null : null,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error || "Failed to start card checkout.");
+      }
+
+      globalThis.location.assign(payload.url as string);
+    } catch (error) {
+      console.error("Card checkout initialization failed:", error);
+      toast.error("Unable to start card payment. Please try again.");
+      setIsCardProcessing(false);
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -102,48 +165,51 @@ export default function CartPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
           <div className="lg:col-span-2 space-y-6">
-            <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500 mb-6">
-              <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
-                    <Phone className="w-6 h-6 text-brand-violet" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-display font-bold text-brand-text text-lg mb-2">Contact Number</h3>
-                    <div className="flex gap-2">
-                      <input 
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Enter phone number for order updates..."
-                        className="w-full bg-white border border-brand-lavender-mid rounded-xl px-4 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/20"
-                      />
-                      {user && phone !== user.phone && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (phone.trim()) {
-                              dispatch(updateProfile({ phone }));
-                              try {
-                                if (auth.currentUser) {
-                                  await updateDoc(doc(db, "users", auth.currentUser.uid), { phone });
-                                  toast.success("Phone updated in profile!");
+            {/* Only show contact number input if user has no phone in profile */}
+            {(!user?.phone || user.phone.trim() === "") && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500 mb-6">
+                <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 p-6 shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
+                      <Phone className="w-6 h-6 text-brand-violet" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-display font-bold text-brand-text text-lg mb-2">Contact Number</h3>
+                      <div className="flex gap-2">
+                        <input 
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="Enter phone number for order updates..."
+                          className="w-full bg-white border border-brand-lavender-mid rounded-xl px-4 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet/20"
+                        />
+                        {user && phone !== user.phone && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (phone.trim()) {
+                                dispatch(updateProfile({ phone }));
+                                try {
+                                  if (auth.currentUser) {
+                                    await updateDoc(doc(db, "users", auth.currentUser.uid), { phone });
+                                    toast.success("Phone updated in profile!");
+                                  }
+                                } catch (e) {
+                                  console.error(e);
                                 }
-                              } catch (e) {
-                                console.error(e);
                               }
-                            }
-                          }}
-                          className="bg-brand-violet/10 hover:bg-brand-violet/20 text-brand-violet rounded-xl px-4 py-2 font-display font-bold text-xs transition-all whitespace-nowrap"
-                        >
-                          Save to Profile
-                        </button>
-                      )}
+                            }}
+                            className="bg-brand-violet/10 hover:bg-brand-violet/20 text-brand-violet rounded-xl px-4 py-2 font-display font-bold text-xs transition-all whitespace-nowrap"
+                          >
+                            Save to Profile
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {orderType === "delivery" && (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500 mb-6">
@@ -296,6 +362,11 @@ export default function CartPage() {
                                 {item.selectedSide}
                               </span>
                             )}
+                            {item.selectedSpice && (
+                              <span className="text-[10px] font-display font-bold uppercase tracking-wider bg-red-50 text-red-700 px-2 py-0.5 rounded-full border border-red-100">
+                                {item.selectedSpice}
+                              </span>
+                            )}
                           </div>
                           <p className="font-body text-brand-muted text-sm line-clamp-1">
                             {item.description}
@@ -387,6 +458,37 @@ export default function CartPage() {
                 </div>
               </div>
 
+              {/* Payment method selector keeps checkout explicit and auditable. */}
+              <div className="mb-6">
+                <p className="text-xs font-display font-bold text-brand-muted uppercase tracking-wider mb-3">
+                  Payment Method
+                </p>
+                <div className="flex p-1 bg-brand-lavender/30 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("cod")}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-display font-bold transition-all ${
+                      paymentMethod === "cod"
+                        ? "bg-brand-violet text-white shadow-violet-glow"
+                        : "text-brand-muted hover:text-brand-violet"
+                    }`}
+                  >
+                    Cash on Delivery
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("card")}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-display font-bold transition-all ${
+                      paymentMethod === "card"
+                        ? "bg-brand-violet text-white shadow-violet-glow"
+                        : "text-brand-muted hover:text-brand-violet"
+                    }`}
+                  >
+                    Card (Stripe)
+                  </button>
+                </div>
+              </div>
+
               {!isStoreOpen && isLoaded && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-center">
                   <p className="text-sm font-display font-bold text-red-600">Store is currently closed.</p>
@@ -395,10 +497,23 @@ export default function CartPage() {
               )}
               
               <button 
-                disabled={isCheckoutDisabled}
+                disabled={isCheckoutDisabled || isCardProcessing}
                 onClick={async () => {
                   if (!isStoreOpen) {
                     toast.error("Sorry, the store is closed right now.");
+                    return;
+                  }
+
+                  if (paymentMethod === "card") {
+                    await startCardCheckout();
+                    return;
+                  }
+
+                  // Orders + notification writes are keyed by auth UID in Firestore rules.
+                  // Block checkout if auth is not ready to prevent permission-denied flows.
+                  const currentUid = auth.currentUser?.uid;
+                  if (!currentUid) {
+                    toast.error("Please log in before placing an order.");
                     return;
                   }
                   
@@ -408,19 +523,24 @@ export default function CartPage() {
                       dispatch(updateProfile({ phone }));
                     }
 
-                    const orderData = {
+
+                    // Build orderData and remove undefined fields
+                    const orderDataRaw = {
                       items,
                       subtotal,
                       deliveryCharge: deliveryFee,
                       total,
+                      paymentMethod: "cod",
+                      paymentStatus: "pending_cod",
                       orderType,
-                      address: orderType === "delivery" ? currentAddress : null,
+                      address: orderType === "delivery" ? (currentAddress ?? null) : null,
                       customerName: user?.name || "Guest",
-                      customerPhone: phone || user?.phone || null,
-                      requestedPickupTime: orderType === "collection" ? pickupMinutes : null,
+                      customerPhone: (phone ?? user?.phone) ? (phone ?? user?.phone) : null,
+                      requestedPickupTime: orderType === "collection" ? (pickupMinutes ?? null) : null,
                     };
-                    
-                    const docRef = await placeOrder(user?.email || "guest", orderData);
+                    // Remove any undefined fields
+                    const orderData = Object.fromEntries(Object.entries(orderDataRaw).filter(([_, v]) => v !== undefined));
+                    const docRef = await placeOrder(currentUid, orderData);
                     
                     // === Generate POS-style Invoice PDF ===
                     const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -517,7 +637,10 @@ export default function CartPage() {
                       startY: tableStartY,
                       head: [["Item Description", "Qty", "Unit", "Amount"]],
                       body: items.map(item => [
-                        item.name + (item.selectedProtein ? ` (${item.selectedProtein})` : "") + (item.selectedSide ? ` / ${item.selectedSide}` : ""),
+                        item.name +
+                          (item.selectedProtein ? ` (${item.selectedProtein})` : "") +
+                          (item.selectedSide ? ` / ${item.selectedSide}` : "") +
+                          (item.selectedSpice ? ` · ${item.selectedSpice}` : ""),
                         item.quantity,
                         `\u00a3${(item.basePrice || 0).toFixed(2)}`,
                         `\u00a3${((item.basePrice || 0) * item.quantity).toFixed(2)}`
@@ -567,9 +690,11 @@ export default function CartPage() {
                     dispatch(clearCart());
                     
                     // Add order to user's profile
+                    const placedAt = new Date();
                     const newClientOrder = {
                       id: docRef.id,
-                      date: new Date().toLocaleDateString(),
+                      date: placedAt.toLocaleDateString("en-IE"),
+                      createdAt: placedAt.toISOString(),
                       total: total,
                       status: "pending" as const,
                       items: items.map(i => ({ name: i.name, quantity: i.quantity, price: i.basePrice || 0 })),
@@ -586,7 +711,9 @@ export default function CartPage() {
                 }}
                 className="w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-2xl py-5 flex items-center justify-center gap-3 shadow-violet-glow transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Checkout Now
+                {paymentMethod === "card"
+                  ? (isCardProcessing ? "Redirecting to Stripe..." : "Pay with Card")
+                  : "Checkout Now"}
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>
