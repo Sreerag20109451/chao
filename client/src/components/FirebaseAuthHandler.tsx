@@ -28,6 +28,9 @@ export default function FirebaseAuthHandler() {
           let phone = "";
           let addresses: string[] = [];
           let primaryAddressIndex = 0;
+          let stripeCustomerId: string | undefined;
+          let stripeCardLast4: string | undefined;
+          let stripeCardBrand: string | undefined;
 
           try {
             const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
@@ -36,6 +39,9 @@ export default function FirebaseAuthHandler() {
               if (data.phone) phone = data.phone;
               if (data.addresses) addresses = data.addresses;
               if (data.primaryAddressIndex !== undefined) primaryAddressIndex = data.primaryAddressIndex;
+              if (typeof data.stripeCustomerId === "string") stripeCustomerId = data.stripeCustomerId;
+              if (typeof data.stripeCardLast4 === "string") stripeCardLast4 = data.stripeCardLast4;
+              if (typeof data.stripeCardBrand === "string") stripeCardBrand = data.stripeCardBrand;
             }
           } catch (e: any) {
             console.warn("FirebaseAuthHandler: Firestore fetch failed:", e.message);
@@ -48,6 +54,9 @@ export default function FirebaseAuthHandler() {
               phone,
               addresses,
               primaryAddressIndex,
+              stripeCustomerId,
+              stripeCardLast4,
+              stripeCardBrand,
             })
           );
         } else {

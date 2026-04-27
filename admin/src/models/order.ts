@@ -22,6 +22,8 @@ export interface FirestoreTimestampLike {
 
 export interface AdminOrder {
   id: string;
+  /** Human-readable order reference when stored on the document */
+  orderId?: string;
   customerName?: string;
   customerPhone?: string;
   address?: string;
@@ -30,10 +32,14 @@ export interface AdminOrder {
   source?: string;
   total?: number;
   subtotal?: number;
+  /** 5% service charge when applicable (may be derived from total − subtotal − delivery if omitted on legacy docs). */
+  serviceCharge?: number;
   deliveryCharge?: number;
   requestedPickupTime?: number;
   paymentMethod?: "card" | "cod" | string;
   paymentStatus?: string;
   createdAt?: FirestoreTimestampLike | Date | string | number | null;
+  /** Legacy date field from older Firestore documents (e.g. ISO string) */
+  date?: string;
   items?: OrderItem[];
 }

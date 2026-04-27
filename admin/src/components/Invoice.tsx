@@ -22,6 +22,8 @@ export interface InvoiceData {
   orderType: "collection" | "delivery";
   items: InvoiceItem[];
   subtotal: number;
+  /** Food/service fee (e.g. 5%); shown between subtotal and delivery. */
+  serviceCharge: number;
   deliveryCharge: number;
   total: number;
   date: string;
@@ -169,10 +171,10 @@ export default function Invoice({ data, onClose }: InvoiceProps) {
                   <span>Subtotal</span>
                   <span>€{data.subtotal.toFixed(2)}</span>
                 </div>
-                {(data as any).serviceCharge !== undefined && (
+                {data.serviceCharge > 0 && (
                   <div className="flex justify-between text-xs py-1 text-zinc-600">
-                    <span>Service Charge</span>
-                    <span>€{((data as any).serviceCharge).toFixed(2)}</span>
+                    <span>Service Charge (5%)</span>
+                    <span>€{data.serviceCharge.toFixed(2)}</span>
                   </div>
                 )}
                 {data.orderType === "delivery" && (

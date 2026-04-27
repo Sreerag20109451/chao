@@ -150,7 +150,15 @@ export default function ContactPage() {
               </div>
               <div className="bg-white/60 p-6 rounded-2xl border border-white/50 shadow-sm flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-brand-violet/10 flex items-center justify-center shrink-0"><Mail className="w-5 h-5 text-brand-violet" /></div>
-                <div><p className="font-display font-bold text-brand-text mb-1 text-sm uppercase">Email</p><a href="mailto:hello@chaothai.ie" className="font-body text-brand-text hover:text-brand-violet transition-colors">hello@chaothai.ie</a></div>
+                <div className="min-w-0">
+                  <p className="font-display font-bold text-brand-text mb-1 text-sm uppercase">Email</p>
+                  <a
+                    href="mailto:chao.waterford@gmail.com"
+                    className="font-body text-brand-text hover:text-brand-violet transition-colors break-all"
+                  >
+                    chao.waterford@gmail.com
+                  </a>
+                </div>
               </div>
             </div>
 

@@ -75,7 +75,7 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
       router.push("/login");
       return;
     }
-    const { createdAt, updatedAt, ...serializableItem } = item;
+    const { createdAt, ...serializableItem } = item;
     dispatch(addToCart({
       ...serializableItem,
       basePrice: finalPrice,

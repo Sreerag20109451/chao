@@ -369,7 +369,7 @@ export default function Home() {
             Waterford&apos;s Finest <span className="text-brand-violet">Authentic Thai</span>.
           </h1>
           <p className="font-body text-brand-muted text-lg md:text-xl max-w-2xl mx-auto mb-10 animate-in fade-in slide-in-from-top-8 duration-1000 delay-200 fill-mode-both">
-            Traditionally crafted Thai cuisine, made fresh daily with premium ingredients. Experience the heart of Thailand with Waterford's top-rated Thai takeaway and restaurant.
+            Traditionally crafted Thai cuisine, made fresh daily with premium ingredients. Experience the heart of Thailand with Waterford's top-rated Thai takeaway.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-top-6 duration-1000 delay-400 fill-mode-both">
             <Link href="/login" className="bg-brand-violet text-white px-8 h-12 rounded-full flex items-center font-display font-bold shadow-violet-glow hover:bg-brand-violet-dark transition-all">

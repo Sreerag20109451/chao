@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/router";
+import { doc, updateDoc } from "firebase/firestore";
 import { clearCart } from "@/lib/features/cartSlice";
-import { addOrder } from "@/lib/features/authSlice";
+import { addOrder, updateStripeBilling } from "@/lib/features/authSlice";
 import { placeOrder } from "@/lib/firebase/orders/service";
+import { db } from "@/lib/firebase";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,6 +22,8 @@ type CheckoutDraft = {
   customerName: string;
   customerPhone: string | null;
   requestedPickupTime: number | null;
+  /** Mirrors cart checkbox — vault card on Stripe Customer when true. */
+  savePaymentMethod?: boolean;
 };
 
 /**
@@ -48,16 +52,39 @@ export default function CheckoutSuccessPage() {
 
       try {
         const verifyRes = await fetch(`/api/payments/verify-session?session_id=${encodeURIComponent(sessionId)}`);
-        const verifyPayload = await verifyRes.json();
+        const verifyPayload = await verifyRes.json() as {
+          paid?: boolean;
+          sessionId?: string;
+          stripeCustomerId?: string | null;
+          savedCardLast4?: string | null;
+          savedCardBrand?: string | null;
+        };
 
         if (!verifyRes.ok || !verifyPayload?.paid) {
           throw new Error("Stripe payment was not completed.");
         }
 
         const draft = JSON.parse(draftRaw) as CheckoutDraft;
+
+        const saveRequested = draft.savePaymentMethod !== false;
+        if (saveRequested && verifyPayload.stripeCustomerId) {
+          await updateDoc(doc(db, "users", draft.userId), {
+            stripeCustomerId: verifyPayload.stripeCustomerId,
+            stripeCardLast4: verifyPayload.savedCardLast4 ?? null,
+            stripeCardBrand: verifyPayload.savedCardBrand ?? null,
+          });
+          dispatch(
+            updateStripeBilling({
+              stripeCustomerId: verifyPayload.stripeCustomerId,
+              stripeCardLast4: verifyPayload.savedCardLast4 ?? undefined,
+              stripeCardBrand: verifyPayload.savedCardBrand ?? undefined,
+            })
+          );
+        }
         const orderData = {
           items: draft.items,
           subtotal: draft.subtotal,
+          serviceCharge: draft.serviceCharge,
           deliveryCharge: draft.deliveryFee,
           total: draft.total,
           orderType: draft.orderType,

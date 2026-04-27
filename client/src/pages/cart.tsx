@@ -19,7 +19,9 @@ import {
   Store,
   MapPin,
   Phone,
-  Clock
+  Clock,
+  CreditCard,
+  Loader2,
 } from "lucide-react";
 import AddressModal from "@/components/AddressModal";
 import { updateProfile, setPrimaryAddress, addOrder } from "@/lib/features/authSlice";
@@ -30,6 +32,8 @@ import { getDocs, collection, query, where, doc, updateDoc } from "firebase/fire
 import { auth, db } from "@/lib/firebase";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import type { StripeSavedPaymentMethod } from "@/models/billing";
+import { formatCardBrandDisplay } from "@/models/billing";
 
 export default function CartPage() {
   const { items, orderType } = useSelector((state: RootState) => state.cart);
@@ -43,8 +47,14 @@ export default function CartPage() {
   // - cod: keep existing in-app order placement
   // - card: redirect to Stripe Checkout
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "card">("cod");
+  /** Vault card on Stripe Customer for repeat checkout (optional). */
+  const [savePaymentMethod, setSavePaymentMethod] = useState(true);
   const [isCardProcessing, setIsCardProcessing] = useState(false);
-  
+  const [savedCards, setSavedCards] = useState<StripeSavedPaymentMethod[]>([]);
+  const [savedCardsLoading, setSavedCardsLoading] = useState(false);
+  /** Which vaulted Stripe PaymentMethod to charge, or `new` for a fresh card on Checkout. */
+  const [selectedSavedPaymentMethodId, setSelectedSavedPaymentMethodId] = useState<string | "new">("new");
+
   useEffect(() => {
     if (settings?.minPrepTime && pickupMinutes < settings.minPrepTime) {
       setPickupMinutes(settings.minPrepTime);
@@ -75,6 +85,50 @@ export default function CartPage() {
     if (user?.phone && !phone) setPhone(user.phone);
   }, [user?.phone, phone]);
 
+  useEffect(() => {
+    if (paymentMethod !== "card" || !user?.stripeCustomerId || !user?.email) {
+      setSavedCards([]);
+      setSelectedSavedPaymentMethodId("new");
+      setSavedCardsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSavedCardsLoading(true);
+    void (async () => {
+      try {
+        const res = await fetch("/api/payments/list-payment-methods", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            stripeCustomerId: user.stripeCustomerId,
+            customerEmail: user.email,
+          }),
+        });
+        const data = (await res.json()) as { paymentMethods?: StripeSavedPaymentMethod[] };
+        if (cancelled) return;
+        if (!res.ok || !Array.isArray(data.paymentMethods)) {
+          setSavedCards([]);
+          setSelectedSavedPaymentMethodId("new");
+          return;
+        }
+        setSavedCards(data.paymentMethods);
+        setSelectedSavedPaymentMethodId(data.paymentMethods.length > 0 ? data.paymentMethods[0].id : "new");
+      } catch {
+        if (!cancelled) {
+          setSavedCards([]);
+          setSelectedSavedPaymentMethodId("new");
+        }
+      } finally {
+        if (!cancelled) setSavedCardsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [paymentMethod, user?.stripeCustomerId, user?.email]);
+
   /**
    * Uses Stripe Checkout for card payments.
    * We persist a draft payload in sessionStorage so the success page
@@ -86,6 +140,9 @@ export default function CartPage() {
       toast.error("Please log in before placing an order.");
       return;
     }
+
+    const vaultNewCardOnly =
+      selectedSavedPaymentMethodId === "new" && savePaymentMethod;
 
     const checkoutDraft = {
       userId: currentUid,
@@ -99,6 +156,7 @@ export default function CartPage() {
       customerName: user?.name || "Guest",
       customerPhone: (phone ?? user?.phone) || null,
       requestedPickupTime: orderType === "collection" ? pickupMinutes : null,
+      savePaymentMethod: vaultNewCardOnly,
     };
 
     sessionStorage.setItem("stripe_checkout_draft", JSON.stringify(checkoutDraft));
@@ -117,6 +175,10 @@ export default function CartPage() {
           customerEmail: user?.email || null,
           customerPhone: (phone ?? user?.phone) || null,
           address: orderType === "delivery" ? currentAddress ?? null : null,
+          savePaymentMethod: vaultNewCardOnly,
+          stripeCustomerId: user?.stripeCustomerId ?? null,
+          selectedPaymentMethodId:
+            selectedSavedPaymentMethodId === "new" ? null : selectedSavedPaymentMethodId,
         }),
       });
 
@@ -497,6 +559,125 @@ export default function CartPage() {
                 </div>
               </div>
 
+              {paymentMethod === "card" && (
+                <div className="mb-4 space-y-3">
+                  <p className="text-xs font-display font-bold uppercase tracking-wider text-brand-muted">
+                    Pay with
+                  </p>
+                  {savedCardsLoading ? (
+                    <div className="flex items-center gap-2 rounded-2xl border border-brand-lavender-mid bg-white/70 px-4 py-3 text-sm text-brand-muted">
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand-violet" />
+                      Loading saved cards…
+                    </div>
+                  ) : savedCards.length > 0 ? (
+                    <div className="space-y-2 rounded-2xl border border-brand-lavender-mid bg-white/70 p-3">
+                      {savedCards.map((card) => (
+                        <label
+                          key={card.id}
+                          className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                            selectedSavedPaymentMethodId === card.id
+                              ? "border-brand-violet bg-brand-violet/10 ring-1 ring-brand-violet/25"
+                              : "border-transparent hover:border-brand-lavender-mid hover:bg-brand-lavender/20"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="saved-card"
+                            checked={selectedSavedPaymentMethodId === card.id}
+                            onChange={() => setSelectedSavedPaymentMethodId(card.id)}
+                            className="mt-1 h-4 w-4 shrink-0 border-brand-lavender-mid text-brand-violet focus:ring-brand-violet"
+                          />
+                          <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-brand-violet" />
+                          <span className="min-w-0 flex-1 font-body text-sm text-brand-text">
+                            <span className="font-display font-bold">
+                              {formatCardBrandDisplay(card.brand)} •••• {card.last4 || "····"}
+                            </span>
+                            {card.expMonth != null && card.expYear != null ? (
+                              <span className="block text-xs text-brand-muted">
+                                Exp {String(card.expMonth).padStart(2, "0")}/{String(card.expYear).slice(-2)}
+                              </span>
+                            ) : null}
+                          </span>
+                        </label>
+                      ))}
+                      <label
+                        className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                          selectedSavedPaymentMethodId === "new"
+                            ? "border-brand-violet bg-brand-violet/10 ring-1 ring-brand-violet/25"
+                            : "border-transparent hover:border-brand-lavender-mid hover:bg-brand-lavender/20"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="saved-card"
+                          checked={selectedSavedPaymentMethodId === "new"}
+                          onChange={() => setSelectedSavedPaymentMethodId("new")}
+                          className="mt-1 h-4 w-4 shrink-0 border-brand-lavender-mid text-brand-violet focus:ring-brand-violet"
+                        />
+                        <span className="min-w-0 flex-1 font-body text-sm text-brand-text">
+                          <span className="font-display font-bold">New card</span>
+                          <span className="mt-0.5 block text-xs text-brand-muted">
+                            Enter details on Stripe. You can save another card below — multiple cards are allowed.
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+                  ) : user?.stripeCustomerId ? (
+                    <p className="rounded-2xl border border-brand-lavender-mid bg-white/60 px-4 py-3 font-body text-xs leading-relaxed text-brand-muted">
+                      No saved cards on file yet. Continue to Stripe to add one. Turn on &quot;Save card&quot; after
+                      payment to vault it — repeat on future orders to build a list of cards.
+                    </p>
+                  ) : (
+                    <p className="rounded-2xl border border-brand-lavender-mid bg-white/60 px-4 py-3 font-body text-xs leading-relaxed text-brand-text">
+                      You&apos;ll enter your card on Stripe&apos;s secure page. Enable &quot;Save card&quot; to store it;
+                      you can save <strong className="font-display">several cards</strong> over time and pick one here
+                      next time.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {paymentMethod === "card" && (
+                <p className="mb-4 rounded-2xl border border-brand-lavender-mid bg-white/60 px-4 py-3 font-body text-xs leading-relaxed text-brand-text">
+                  {selectedSavedPaymentMethodId !== "new" ? (
+                    <>
+                      Stripe will use the card you selected. You may only need to enter the{" "}
+                      <strong className="font-display">security code (CVC)</strong> — it is never stored.
+                    </>
+                  ) : (
+                    <>
+                      Payment continues on Stripe. Only the <strong className="font-display">CVC</strong> may be
+                      required if you pick a saved card next time.
+                    </>
+                  )}
+                </p>
+              )}
+
+              {paymentMethod === "card" && selectedSavedPaymentMethodId === "new" && (
+                <label className="mb-6 flex cursor-pointer items-start gap-3 rounded-2xl border border-brand-lavender-mid bg-white/70 p-4 text-left">
+                  <input
+                    type="checkbox"
+                    checked={savePaymentMethod}
+                    onChange={(e) => setSavePaymentMethod(e.target.checked)}
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-brand-lavender-mid text-brand-violet focus:ring-brand-violet"
+                  />
+                  <span>
+                    <span className="font-display font-bold text-sm text-brand-text">Save this card for next time</span>
+                    <span className="mt-1 block font-body text-xs text-brand-muted">
+                      When checked, Stripe adds the new card you enter to your saved list (you can store multiple).
+                      Uncheck for a one-off payment without saving another card.
+                    </span>
+                  </span>
+                </label>
+              )}
+
+              {paymentMethod === "card" && selectedSavedPaymentMethodId !== "new" && savedCards.length > 0 && (
+                <p className="mb-6 rounded-2xl border border-brand-lavender-mid/80 bg-brand-lavender/15 px-4 py-3 font-body text-xs text-brand-muted">
+                  Using a card already on file. To add another card, select <strong className="font-display text-brand-text">New card</strong>{" "}
+                  above and enable save after paying.
+                </p>
+              )}
+
               {!isStoreOpen && isLoaded && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-center">
                   <p className="text-sm font-display font-bold text-red-600">Store is currently closed.</p>
@@ -555,6 +736,7 @@ export default function CartPage() {
                     const orderDataRaw = {
                       items,
                       subtotal,
+                      serviceCharge,
                       deliveryCharge: deliveryFee,
                       total,
                       paymentMethod: "cod",

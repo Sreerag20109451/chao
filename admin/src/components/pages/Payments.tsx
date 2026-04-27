@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CreditCard, Banknote, Search } from "lucide-react";
-import { subscribeToOrders } from "@/lib/firebase/orders/service";
+import { subscribeToOrders, updateOrderPaymentStatus } from "@/lib/firebase/orders/service";
+import { toast } from "sonner";
 
 type PaymentOrder = {
   id: string;
@@ -23,11 +24,48 @@ type PaymentOrder = {
 export default function PaymentsPage() {
   const [orders, setOrders] = useState<PaymentOrder[]>([]);
   const [search, setSearch] = useState("");
+  const [updatingIds, setUpdatingIds] = useState<string[]>([]);
 
   useEffect(() => {
     const unsubscribe = subscribeToOrders((rows) => setOrders(rows as PaymentOrder[]));
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const normalizeCardPayments = async () => {
+      const cardRowsToNormalize = orders.filter((order) => {
+        if (order.paymentMethod !== "card") return false;
+        const status = (order.paymentStatus || "").toLowerCase();
+        return status !== "completed";
+      });
+
+      if (cardRowsToNormalize.length === 0) return;
+
+      for (const order of cardRowsToNormalize) {
+        try {
+          await updateOrderPaymentStatus(order.id, "completed");
+        } catch (error) {
+          console.error(`Failed to auto-update card payment ${order.id}:`, error);
+        }
+      }
+    };
+
+    void normalizeCardPayments();
+  }, [orders]);
+
+  const markCodAsCompleted = async (orderId: string) => {
+    if (updatingIds.includes(orderId)) return;
+    setUpdatingIds((prev) => [...prev, orderId]);
+    try {
+      await updateOrderPaymentStatus(orderId, "completed");
+      toast.success("CoD payment marked as completed.");
+    } catch (error) {
+      console.error("Failed to update CoD payment status:", error);
+      toast.error("Could not update CoD payment status.");
+    } finally {
+      setUpdatingIds((prev) => prev.filter((id) => id !== orderId));
+    }
+  };
 
   const filtered = useMemo(() => {
     const needle = search.toLowerCase().trim();
@@ -111,8 +149,23 @@ export default function PaymentsPage() {
                         )}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-brand-text">
-                      {order.paymentStatus || "unknown"}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-brand-text">
+                          {order.paymentStatus || "unknown"}
+                        </span>
+                        {order.paymentMethod === "cod" &&
+                          (order.paymentStatus || "").toLowerCase() !== "completed" && (
+                            <button
+                              type="button"
+                              disabled={updatingIds.includes(order.id)}
+                              onClick={() => void markCodAsCompleted(order.id)}
+                              className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50"
+                            >
+                              Complete
+                            </button>
+                          )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-brand-text">
                       {order.status || "pending"}

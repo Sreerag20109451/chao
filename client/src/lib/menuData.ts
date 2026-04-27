@@ -96,6 +96,10 @@ export interface Deal {
   endDate: string;
   applicableCategories?: Category[];
   applicableItems?: string[]; // array of item IDs
+  /** Some admin payloads use `items` for the same purpose as applicableItems */
+  items?: string[];
+  /** Fixed promotional price when set by admin / Firestore */
+  dealPrice?: number;
   minOrderValue?: number;
   isActive: boolean;
 }

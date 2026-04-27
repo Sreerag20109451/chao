@@ -32,7 +32,7 @@ export interface StoreSettings {
 const DEFAULT_SETTINGS: StoreSettings = {
   isAcceptingOrders: true,
   storeName: "Chao Thai",
-  storeEmail: "hello@chaothai.ie",
+  storeEmail: "chao.waterford@gmail.com",
   openingHours: {
     mon: { open: "12:00", close: "22:00", closed: false },
     tue: { open: "12:00", close: "22:00", closed: false },

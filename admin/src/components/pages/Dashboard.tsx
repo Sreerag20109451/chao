@@ -10,6 +10,7 @@ import { listenToStoreSettings, toggleStoreStatus, initStoreSettings } from "@/l
 import { listenToMenu } from "@/lib/firebase/menu/service";
 import { subscribeToOrders } from "@/lib/firebase/orders/service";
 import { getDashboardOrderSummary } from "@/lib/orders/summary";
+import { parseOrderDate } from "@/controllers/ordersController";
 
 export default function DashboardPage() {
   const [isAcceptingOrders, setIsAcceptingOrders] = useState(true);
@@ -150,7 +151,7 @@ export default function DashboardPage() {
              ) : (
                <div className="divide-y divide-brand-lavender-mid">
                  {activeTodaysOrders.slice(0, 10).map(order => {
-                    const orderDate = order.createdAt ? new Date(order.createdAt.seconds * 1000) : new Date();
+                    const orderDate = parseOrderDate(order.createdAt) ?? new Date();
                     const timeStr = orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     return (
                       <div key={order.id} className="p-4 flex items-center justify-between hover:bg-white transition-colors">

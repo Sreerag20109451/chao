@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { StripeBillingInfo } from "@/models/billing";
 
 export interface Order {
   id: string;
@@ -17,7 +18,7 @@ export interface PaymentMethod {
   isPrimary: boolean;
 }
 
-export interface User {
+export interface User extends StripeBillingInfo {
   name: string;
   email: string;
   phone?: string;
@@ -43,14 +44,22 @@ const authSlice = createSlice({
   reducers: {
     setCredentials: (
       state,
-      action: PayloadAction<{ name: string; email: string; phone?: string; addresses?: string[]; primaryAddressIndex?: number }>
+      action: PayloadAction<
+        StripeBillingInfo & {
+          name: string;
+          email: string;
+          phone?: string;
+          addresses?: string[];
+          primaryAddressIndex?: number;
+        }
+      >
     ) => {
       state.user = {
         ...action.payload,
         addresses: action.payload.addresses || [],
         primaryAddressIndex: action.payload.primaryAddressIndex || 0,
         orders: [],
-        paymentMethods: []
+        paymentMethods: [],
       };
       state.isAuthenticated = true;
     },
@@ -91,8 +100,24 @@ const authSlice = createSlice({
         state.user.orders.unshift(action.payload);
       }
     },
+    updateStripeBilling: (state, action: PayloadAction<Partial<StripeBillingInfo>>) => {
+      if (!state.user) return;
+      const { stripeCustomerId, stripeCardLast4, stripeCardBrand } = action.payload;
+      if (stripeCustomerId !== undefined) state.user.stripeCustomerId = stripeCustomerId;
+      if (stripeCardLast4 !== undefined) state.user.stripeCardLast4 = stripeCardLast4;
+      if (stripeCardBrand !== undefined) state.user.stripeCardBrand = stripeCardBrand;
+    },
   },
 });
 
-export const { setCredentials, logout, addAddress, setPrimaryAddress, removeAddress, updateProfile, addOrder } = authSlice.actions;
+export const {
+  setCredentials,
+  logout,
+  addAddress,
+  setPrimaryAddress,
+  removeAddress,
+  updateProfile,
+  addOrder,
+  updateStripeBilling,
+} = authSlice.actions;
 export default authSlice.reducer;

@@ -1,22 +1,22 @@
-export interface SummaryOrder {
-  id: string;
-  total?: number;
-  status?: string;
-  createdAt?: { seconds?: number } | null;
-}
+import type { AdminOrder } from "@/models/order";
+import { parseOrderDate } from "@/controllers/ordersController";
+
+/** Orders from Firestore — same shape as admin domain model. */
+export type SummaryOrder = AdminOrder;
 
 const isCancelled = (order: SummaryOrder) => order.status === "cancelled";
 
 const isFromToday = (order: SummaryOrder, todayStartMs: number) => {
-  if (!order.createdAt?.seconds) return false;
-  const orderDateStartMs = new Date(order.createdAt.seconds * 1000).setHours(0, 0, 0, 0);
+  const d = parseOrderDate(order.createdAt);
+  if (!d) return false;
+  const orderDateStartMs = new Date(d.getTime()).setHours(0, 0, 0, 0);
   return orderDateStartMs === todayStartMs;
 };
 
 const isFromCurrentWeek = (order: SummaryOrder, startOfWeek: Date) => {
-  if (!order.createdAt?.seconds) return false;
-  const orderDate = new Date(order.createdAt.seconds * 1000);
-  return orderDate >= startOfWeek;
+  const d = parseOrderDate(order.createdAt);
+  if (!d) return false;
+  return d >= startOfWeek;
 };
 
 export const getDashboardOrderSummary = (orders: SummaryOrder[]) => {

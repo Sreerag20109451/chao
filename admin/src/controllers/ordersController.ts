@@ -62,6 +62,15 @@ export const formatPlacedAt = (createdAt: AdminOrder["createdAt"], fallbackDate?
 export const buildInvoiceData = (order: AdminOrder, activeDriver: string | null): InvoiceData => {
   const date = parseOrderDate(order.createdAt);
 
+  const subtotal = order.subtotal ?? 0;
+  const deliveryCharge = order.deliveryCharge ?? 0;
+  const total = order.total ?? 0;
+
+  let serviceCharge =
+    typeof order.serviceCharge === "number" && !Number.isNaN(order.serviceCharge)
+      ? order.serviceCharge
+      : Math.max(0, Math.round((total - subtotal - deliveryCharge) * 100) / 100);
+
   return {
     orderId: order.id,
     customerName: order.customerName || "Guest",
@@ -76,9 +85,10 @@ export const buildInvoiceData = (order: AdminOrder, activeDriver: string | null)
       selectedSide: item.selectedSide || undefined,
       selectedSpice: item.selectedSpice || undefined,
     })),
-    subtotal: order.subtotal || 0,
-    deliveryCharge: order.deliveryCharge || 0,
-    total: order.total || 0,
+    subtotal,
+    serviceCharge,
+    deliveryCharge,
+    total,
     date: date?.toLocaleDateString("en-IE") || new Date().toLocaleDateString("en-IE"),
     time:
       date?.toLocaleTimeString([], {

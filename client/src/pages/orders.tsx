@@ -26,10 +26,22 @@ type TimestampLike = {
 type ClientOrderItem = {
   quantity: number;
   name: string;
+  basePrice?: number;
   selectedProtein?: string;
   selectedSide?: string;
   selectedSpice?: string;
+  /** Legacy POS / alternate field name */
+  selectedMeat?: string;
 };
+
+function orderItemCustomizationRows(item: ClientOrderItem): { label: string; value: string }[] {
+  const rows: { label: string; value: string }[] = [];
+  const protein = item.selectedProtein || item.selectedMeat;
+  if (protein) rows.push({ label: "Protein", value: protein });
+  if (item.selectedSide) rows.push({ label: "Side", value: item.selectedSide });
+  if (item.selectedSpice) rows.push({ label: "Spice level", value: item.selectedSpice });
+  return rows;
+}
 
 type ClientOrder = {
   id: string;
@@ -50,17 +62,20 @@ export default function OrdersPage() {
   // Support Firestore Timestamp, legacy timestamp-like objects, ISO strings, and Date.
   const parseOrderDate = (value: ClientOrder["createdAt"]): Date | null => {
     if (!value) return null;
-    if (typeof value?.toDate === "function") {
-      const dt = value.toDate();
-      return Number.isNaN(dt.getTime()) ? null : dt;
-    }
-    if (typeof value?.seconds === "number") {
-      const dt = new Date(value.seconds * 1000 + Math.floor((value.nanoseconds || 0) / 1_000_000));
-      return Number.isNaN(dt.getTime()) ? null : dt;
-    }
-    if (typeof value?._seconds === "number") {
-      const dt = new Date(value._seconds * 1000 + Math.floor((value._nanoseconds || 0) / 1_000_000));
-      return Number.isNaN(dt.getTime()) ? null : dt;
+    if (typeof value === "object" && !(value instanceof Date)) {
+      const ts = value as TimestampLike;
+      if (typeof ts.toDate === "function") {
+        const dt = ts.toDate();
+        return dt && !Number.isNaN(dt.getTime()) ? dt : null;
+      }
+      if (typeof ts.seconds === "number") {
+        const dt = new Date(ts.seconds * 1000 + Math.floor((ts.nanoseconds || 0) / 1_000_000));
+        return Number.isNaN(dt.getTime()) ? null : dt;
+      }
+      if (typeof ts._seconds === "number") {
+        const dt = new Date(ts._seconds * 1000 + Math.floor((ts._nanoseconds || 0) / 1_000_000));
+        return Number.isNaN(dt.getTime()) ? null : dt;
+      }
     }
     if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
     if (typeof value === "string" || typeof value === "number") {
@@ -133,12 +148,27 @@ export default function OrdersPage() {
               <Link href="/menu" className="inline-flex items-center justify-center bg-brand-violet text-white font-display font-bold rounded-2xl px-8 py-4 shadow-violet-glow">Explore Menu</Link>
             </div>
           ) : (
-            ordersToRender.map((order) => (
-              <div key={order.id} className="bg-white/80 backdrop-blur-md rounded-3xl border border-white/50 shadow-lg overflow-hidden group">
+            ordersToRender.map((order) => {
+              const isExpanded = expandedOrderIds.includes(order.id);
+              return (
+              <div
+                key={order.id}
+                className={`rounded-3xl border bg-white/80 shadow-lg backdrop-blur-md overflow-hidden transition-all duration-300 group ${
+                  isExpanded
+                    ? "border-brand-violet/45 ring-2 ring-brand-violet/30 shadow-[0_12px_40px_-12px_rgba(124,58,237,0.28)]"
+                    : "border-white/50"
+                }`}
+              >
                 {(() => {
                   const { date, time } = formatOrderDateTime(order);
                   return (
-                <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-brand-lavender-mid/50">
+                <div
+                  className={`p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b transition-colors ${
+                    isExpanded
+                      ? "border-brand-violet/25 bg-brand-violet/[0.04]"
+                      : "border-brand-lavender-mid/50"
+                  }`}
+                >
                   <div className="flex items-center gap-6">
                     <div className="w-14 h-14 bg-brand-violet/10 rounded-2xl flex items-center justify-center shrink-0">
                       {order.status === "delivered" ? (
@@ -190,8 +220,8 @@ export default function OrdersPage() {
                 </div>
                   );
                 })()}
-                {expandedOrderIds.includes(order.id) && (
-                  <div className="p-6 bg-brand-lavender/10 animate-in fade-in duration-200">
+                {isExpanded && (
+                  <div className="animate-in fade-in duration-200 border-l-[5px] border-brand-violet bg-gradient-to-br from-brand-violet/[0.06] via-brand-lavender/15 to-brand-lavender/25 px-6 py-6 sm:pl-8">
                     <div className="mb-4 grid gap-2 sm:grid-cols-2">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-wider text-brand-muted">Order Type</p>
@@ -209,26 +239,68 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
-                    {/* Keep line-items in a dedicated section so details remain scannable. */}
-                    <div className="flex flex-wrap gap-4">
-                      {order.items.map((item, idx) => (
-                        <div key={idx} className="bg-white px-3 py-2 rounded-xl border border-brand-lavender-mid flex flex-col gap-0.5 shadow-sm min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="bg-brand-violet text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0">{item.quantity}</span>
-                            <span className="font-body text-sm text-brand-text truncate">{item.name}</span>
-                          </div>
-                          {(item.selectedProtein || item.selectedSide || item.selectedSpice) && (
-                            <span className="text-[10px] text-brand-muted pl-7 truncate">
-                              {[item.selectedProtein, item.selectedSide, item.selectedSpice].filter(Boolean).join(" · ")}
-                            </span>
-                          )}
-                        </div>
-                      ))}
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-brand-muted">Items</p>
+                      {(Array.isArray(order.items) ? order.items : []).length === 0 ? (
+                        <p className="font-body text-sm text-brand-muted">No line items on this order.</p>
+                      ) : (
+                        <ul className="space-y-3">
+                          {(Array.isArray(order.items) ? order.items : []).map((item, idx) => {
+                            const customRows = orderItemCustomizationRows(item);
+                            const unit = item.basePrice != null ? Number(item.basePrice) : null;
+                            const lineTotal =
+                              unit != null && !Number.isNaN(unit)
+                                ? unit * (item.quantity || 1)
+                                : null;
+                            return (
+                              <li
+                                key={idx}
+                                className="rounded-xl border border-brand-lavender-mid bg-white p-4 shadow-sm"
+                              >
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-display font-bold text-brand-text">
+                                      <span className="text-brand-violet">{item.quantity}×</span>{" "}
+                                      <span className="break-words">{item.name}</span>
+                                    </p>
+                                  </div>
+                                  {lineTotal != null && (
+                                    <span className="shrink-0 font-body text-sm font-semibold text-brand-text">
+                                      €{lineTotal.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                                {unit != null && !Number.isNaN(unit) && (
+                                  <p className="mt-1 font-body text-[11px] text-brand-muted">
+                                    €{unit.toFixed(2)} each
+                                  </p>
+                                )}
+                                {customRows.length > 0 ? (
+                                  <dl className="mt-3 space-y-1.5 border-t border-brand-lavender-mid/60 pt-3">
+                                    {customRows.map((row) => (
+                                      <div
+                                        key={`${idx}-${row.label}`}
+                                        className="grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-1 text-sm"
+                                      >
+                                        <dt className="font-display text-[11px] font-bold uppercase tracking-wide text-brand-muted">
+                                          {row.label}
+                                        </dt>
+                                        <dd className="font-body text-brand-text break-words">{row.value}</dd>
+                                      </div>
+                                    ))}
+                                  </dl>
+                                ) : null}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
-            ))
+            );
+            })
           )}
         </div>
       </div>

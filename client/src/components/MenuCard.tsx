@@ -59,7 +59,7 @@ export default function MenuCard({ item, deals }: MenuCardProps) {
     }
     if (!hasOptions) {
       // Overwrite basePrice with effectivePrice so the cart knows the discounted price
-      const { createdAt, updatedAt, ...serializableItem } = item;
+      const { createdAt, ...serializableItem } = item;
       dispatch(addToCart({ ...serializableItem, basePrice: effectivePrice }));
       toast.success(`Added ${item.name} to cart`);
     }

@@ -109,3 +109,9 @@ export const updateOrderStatusWithNotification = async (
     console.error("Order status updated, but notification failed:", notificationError);
   }
 };
+
+export const updateOrderPaymentStatus = async (orderId: string, paymentStatus: string) => {
+  await updateDoc(doc(db, "orders", orderId), {
+    paymentStatus,
+  });
+};

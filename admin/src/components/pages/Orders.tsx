@@ -3,7 +3,16 @@ import { ShoppingBag, Search, FileText, ChevronDown } from "lucide-react";
 import Invoice from "../Invoice";
 import { useOrdersController } from "@/controllers/useOrdersController";
 import { buildInvoiceData, formatPlacedAt, normalizeOrderStatus, parseOrderDate } from "@/controllers/ordersController";
-import type { AdminOrder, OrderStatus } from "@/models/order";
+import type { AdminOrder, OrderItem, OrderStatus } from "@/models/order";
+
+function orderItemCustomizationRows(item: OrderItem & { selectedMeat?: string }): { label: string; value: string }[] {
+  const rows: { label: string; value: string }[] = [];
+  const protein = item.selectedProtein || item.selectedMeat;
+  if (protein) rows.push({ label: "Protein", value: String(protein) });
+  if (item.selectedSide) rows.push({ label: "Side", value: item.selectedSide });
+  if (item.selectedSpice) rows.push({ label: "Spice level", value: item.selectedSpice });
+  return rows;
+}
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   pending:   "bg-amber-50   text-amber-600  border-amber-200",
@@ -94,8 +103,15 @@ export default function AdminOrders() {
                   <React.Fragment key={order.id}>
                     {(() => {
                       const normalizedStatus = normalizeOrderStatus(order.status);
+                      const isOpen = expandedOrderIds.includes(order.id);
                       return (
-                    <tr className="hover:bg-brand-lavender/5 transition-colors">
+                    <tr
+                      className={`transition-colors ${
+                        isOpen
+                          ? "bg-brand-violet/[0.06] shadow-[inset_4px_0_0_0_#8b5cf6]"
+                          : "hover:bg-brand-lavender/5"
+                      }`}
+                    >
                       <td className="px-6 py-4 font-display font-bold text-brand-violet">
                         #{order.id.slice(0, 6)}
                         {order.source === "pos" && (
@@ -201,9 +217,9 @@ export default function AdminOrders() {
                       );
                     })()}
                     {expandedOrderIds.includes(order.id) && (
-                      <tr className="bg-brand-lavender/5">
-                        <td colSpan={8} className="px-6 py-4">
-                          <div className="grid gap-4 md:grid-cols-3">
+                      <tr className="bg-brand-violet/[0.07] shadow-[inset_0_1px_0_0_rgba(139,92,246,0.18),inset_4px_0_0_0_#8b5cf6]">
+                        <td colSpan={8} className="border-t border-brand-violet/20 px-6 py-5">
+                          <div className="grid gap-6 md:grid-cols-3">
                             <div>
                               <p className="text-[10px] font-bold uppercase tracking-wider text-brand-muted">Phone</p>
                               <p className="font-body text-sm text-brand-text">{order.customerPhone || "N/A"}</p>
@@ -214,6 +230,63 @@ export default function AdminOrders() {
                                 {order.orderType === "delivery" ? (order.address || "N/A") : "Collection order"}
                               </p>
                             </div>
+                          </div>
+
+                          <div className="mt-6 border-t border-brand-lavender-mid pt-4">
+                            <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-brand-muted">
+                              Order items
+                            </p>
+                            {!order.items?.length ? (
+                              <p className="font-body text-sm text-brand-muted">No line items recorded.</p>
+                            ) : (
+                              <ul className="space-y-3">
+                                {order.items.map((line, idx) => {
+                                  const rows = orderItemCustomizationRows(line);
+                                  const qty = line.quantity ?? 1;
+                                  const unit = line.basePrice != null ? Number(line.basePrice) : null;
+                                  const lineTotal =
+                                    unit != null && !Number.isNaN(unit) ? unit * qty : null;
+                                  return (
+                                    <li
+                                      key={`${order.id}-item-${idx}`}
+                                      className="rounded-xl border border-brand-lavender-mid bg-white px-4 py-3"
+                                    >
+                                      <div className="flex flex-wrap items-start justify-between gap-2">
+                                        <p className="font-display font-bold text-sm text-brand-text">
+                                          <span className="text-brand-violet">{qty}×</span>{" "}
+                                          <span className="break-words">{line.name || "Item"}</span>
+                                        </p>
+                                        {lineTotal != null && (
+                                          <span className="shrink-0 font-body text-sm font-semibold text-brand-text">
+                                            €{lineTotal.toFixed(2)}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {unit != null && !Number.isNaN(unit) && (
+                                        <p className="mt-0.5 font-body text-[11px] text-brand-muted">
+                                          €{unit.toFixed(2)} each
+                                        </p>
+                                      )}
+                                      {rows.length > 0 ? (
+                                        <dl className="mt-3 space-y-1 border-t border-brand-lavender-mid/60 pt-3">
+                                          {rows.map((row) => (
+                                            <div
+                                              key={`${idx}-${row.label}`}
+                                              className="grid grid-cols-[7rem_1fr] gap-x-3 text-sm"
+                                            >
+                                              <dt className="font-display text-[10px] font-bold uppercase tracking-wide text-brand-muted">
+                                                {row.label}
+                                              </dt>
+                                              <dd className="font-body text-brand-text break-words">{row.value}</dd>
+                                            </div>
+                                          ))}
+                                        </dl>
+                                      ) : null}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -227,9 +300,9 @@ export default function AdminOrders() {
       </div>
 
       {/* Invoice Modal */}
-      {invoiceOrder && (
+      {invoiceOrder && invoiceData && (
         <Invoice
-                          data={invoiceData}
+          data={invoiceData}
           onClose={() => setInvoiceOrder(null)}
         />
       )}

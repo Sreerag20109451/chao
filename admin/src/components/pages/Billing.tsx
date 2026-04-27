@@ -259,6 +259,7 @@ export default function Billing() {
       total: i.basePrice * i.quantity
     })),
     subtotal,
+    serviceCharge: 0,
     deliveryCharge: effectiveDeliveryCharge,
     total,
     date: new Date().toLocaleDateString(),
