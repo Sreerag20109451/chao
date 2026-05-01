@@ -1,0 +1,20 @@
+{
+  "successfulVisa": {
+    "number": "4242424242424242",
+    "expiry": "12/34",
+    "cvc": "123",
+    "postalCode": "12345"
+  },
+  "declinedGeneric": {
+    "number": "4000000000000002",
+    "expiry": "12/34",
+    "cvc": "123",
+    "postalCode": "12345"
+  },
+  "requires3ds": {
+    "number": "4000002500003155",
+    "expiry": "12/34",
+    "cvc": "123",
+    "postalCode": "12345"
+  }
+}

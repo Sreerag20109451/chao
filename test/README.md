@@ -55,6 +55,55 @@ Non-goals for E2E:
 - Test Firebase SDK internals.
 - Test third-party payment processing in production mode.
 
+## Module: Authentication
+
+This module is executed with dedicated, module-wise specs:
+
+- `cypress/e2e/authentication/client-auth.cy.ts` for customer authentication flows only.
+- `cypress/e2e/authentication/admin-auth.cy.ts` for admin authentication flows only.
+
+### Authentication Requirements
+
+Environment requirements:
+
+- `CUSTOMER_BASE_URL` (or `CLIENT_BASE_URL`) for customer app origin.
+- `ADMIN_BASE_URL` for admin app origin.
+- `E2E_CUSTOMER_EMAIL` and `E2E_CUSTOMER_PASSWORD` for seeded customer login.
+- `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` for seeded admin login.
+
+Data and access requirements:
+
+- Customer test user exists with `userrole: "client"`.
+- Admin test user exists with `userrole: "admin"`.
+- Registration test uses a unique email per run.
+- Firebase project and Firestore rules allow profile creation and role lookup.
+
+### Module-Wise Exit Criteria
+
+#### Client Authentication Exit Criteria
+
+- Valid customer login succeeds and user is redirected from `/login` to `/`.
+- Invalid credentials show fallback error and user remains on `/login`.
+- Admin credentials are rejected on the client portal with clear guidance.
+- New customer registration succeeds and user reaches authenticated home UI.
+- After logout, authenticated customer-only actions/routes are no longer accessible.
+
+#### Admin Authentication Exit Criteria
+
+- Unauthenticated access to protected admin routes redirects to `/landing`.
+- Valid admin login succeeds and grants dashboard access.
+- Invalid credentials show fallback error and user remains on `/login`.
+- Customer credentials are rejected on the admin portal with clear guidance.
+- Authenticated admin access to `/login` or `/landing` redirects to dashboard.
+- After logout, protected admin routes redirect to `/landing`.
+
+#### Cross-Portal Role Isolation Exit Criteria
+
+- Client portal never grants session access for admin-role users.
+- Admin portal never grants session access for client-role users.
+- Role mismatch paths sign out transient sessions and show explicit next step messaging.
+- No privileged admin route becomes reachable with client credentials.
+
 ## Test Environment Strategy
 
 Use three levels of environments:
@@ -109,6 +158,9 @@ Recommended spec layout:
 
 ```text
 cypress/e2e/
+  authentication/
+    client-auth.cy.ts
+    admin-auth.cy.ts
   customer/
     smoke.cy.ts
     navigation.cy.ts
@@ -795,3 +847,4 @@ The E2E suite is considered production-ready when:
 - Test data setup and cleanup are automated.
 - CI can run smoke tests reliably without manual credentials.
 - All new E2E specs use stable selectors instead of fragile class selectors.
+- Authentication module passes all client, admin, and role-isolation exit criteria.

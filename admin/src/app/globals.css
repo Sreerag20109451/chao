@@ -98,12 +98,35 @@
   html {
     scroll-behavior: smooth;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
   body {
     font-family: var(--font-sarabun), sans-serif;
     @apply bg-background text-foreground antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-bai-jamjuree), sans-serif;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px solid hsl(42 90% 42%);
+    outline-offset: 3px;
   }
 }
 

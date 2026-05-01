@@ -65,6 +65,7 @@ export default function Sidebar() {
             <Link
               key={href}
               to={href}
+              aria-current={isActive ? "page" : undefined}
               className={[
                 "flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl font-display font-medium text-sm transition-all",
                 isActive
@@ -73,7 +74,7 @@ export default function Sidebar() {
               ].join(" ")}
             >
               <span className="flex items-center gap-3">
-                {icon}
+                <span aria-hidden="true">{icon}</span>
                 {label}
               </span>
               {href === "/messages" && unreadCount > 0 && (
@@ -92,7 +93,7 @@ export default function Sidebar() {
           onClick={logout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-display font-medium text-sm text-sidebar-foreground/90 hover:bg-destructive/10 hover:text-destructive transition-colors w-full"
         >
-          <LogOut className="w-5 h-5" />
+          <LogOut className="w-5 h-5" aria-hidden="true" />
           Log out
         </button>
         

@@ -112,15 +112,16 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
         <div className="space-y-8 py-6">
           {item.availableMeats && item.availableMeats.length > 0 && (
             <div className="space-y-4">
-              <label className="text-xs font-display font-bold text-brand-text uppercase tracking-widest flex items-center justify-between">
+              <p id="customize-meat-label" className="text-xs font-display font-bold text-brand-text uppercase tracking-widest flex items-center justify-between">
                 Choose Meat
                 <span className="text-[10px] text-brand-violet bg-brand-violet/5 px-2 py-0.5 rounded-full">Required</span>
-              </label>
-              <div className="grid grid-cols-2 gap-3">
+              </p>
+              <div className="grid grid-cols-2 gap-3" role="group" aria-labelledby="customize-meat-label">
                 {availableMeats.map((protein) => (
                   <button
                     key={protein}
                     onClick={() => setSelectedProtein(protein)}
+                    aria-pressed={effectiveSelectedProtein === protein}
                     className={`flex items-center justify-between px-4 py-3 rounded-xl border font-body text-sm transition-all ${
                       effectiveSelectedProtein === protein
                         ? "bg-brand-violet border-brand-violet text-white shadow-violet-glow scale-[1.02]"
@@ -131,7 +132,7 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
                       {protein}
                       {getMeatIncrement(protein) > 0 && <span className="opacity-70 text-[10px] ml-1">(+€{getMeatIncrement(protein).toFixed(2)})</span>}
                     </span>
-                    {effectiveSelectedProtein === protein && <Check className="w-4 h-4" />}
+                    {effectiveSelectedProtein === protein && <Check className="w-4 h-4" aria-hidden="true" />}
                   </button>
                 ))}
               </div>
@@ -140,15 +141,16 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
 
           {item.availableSides && item.availableSides.length > 0 && (
             <div className="space-y-4">
-              <label className="text-xs font-display font-bold text-brand-text uppercase tracking-widest flex items-center justify-between">
+              <p id="customize-side-label" className="text-xs font-display font-bold text-brand-text uppercase tracking-widest flex items-center justify-between">
                 Choose Side
                 <span className="text-[10px] text-brand-violet bg-brand-violet/5 px-2 py-0.5 rounded-full">Required</span>
-              </label>
-              <div className="grid grid-cols-2 gap-3">
+              </p>
+              <div className="grid grid-cols-2 gap-3" role="group" aria-labelledby="customize-side-label">
                 {item.availableSides.map((side) => (
                   <button
                     key={side}
                     onClick={() => setSelectedSide(side)}
+                    aria-pressed={selectedSide === side}
                     className={`flex items-center justify-between px-4 py-3 rounded-xl border font-body text-sm transition-all ${
                       selectedSide === side
                         ? "bg-brand-violet border-brand-violet text-white shadow-violet-glow scale-[1.02]"
@@ -163,7 +165,7 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
                         </span>
                       )}
                     </span>
-                    {selectedSide === side && <Check className="w-4 h-4" />}
+                    {selectedSide === side && <Check className="w-4 h-4" aria-hidden="true" />}
                   </button>
                 ))}
               </div>
@@ -172,11 +174,11 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
 
           {item.availableSpiceLevels && item.availableSpiceLevels.length > 0 && (
             <div className="space-y-4">
-              <label className="text-xs font-display font-bold text-brand-text uppercase tracking-widest flex items-center justify-between">
+              <p id="customize-spice-label" className="text-xs font-display font-bold text-brand-text uppercase tracking-widest flex items-center justify-between">
                 Spice level
                 <span className="text-[10px] text-brand-violet bg-brand-violet/5 px-2 py-0.5 rounded-full">Required</span>
-              </label>
-              <div className="grid grid-cols-2 gap-3">
+              </p>
+              <div className="grid grid-cols-2 gap-3" role="group" aria-labelledby="customize-spice-label">
                 {item.availableSpiceLevels.map((level) => {
                   const effectiveSpice = selectedSpice || item.availableSpiceLevels![0];
                   return (
@@ -184,6 +186,7 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
                     key={level}
                     type="button"
                     onClick={() => setSelectedSpice(level)}
+                    aria-pressed={effectiveSpice === level}
                     className={`flex items-center justify-between px-4 py-3 rounded-xl border font-body text-sm transition-all ${
                       effectiveSpice === level
                         ? "bg-brand-violet border-brand-violet text-white shadow-violet-glow scale-[1.02]"
@@ -191,7 +194,7 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
                     }`}
                   >
                     {level}
-                    {effectiveSpice === level && <Check className="w-4 h-4" />}
+                    {effectiveSpice === level && <Check className="w-4 h-4" aria-hidden="true" />}
                   </button>
                   );
                 })}
@@ -202,6 +205,7 @@ export default function CustomizeModal({ item, children }: CustomizeModalProps) 
 
         <DialogFooter className="bg-transparent border-none p-0 mt-2">
           <button 
+            data-cy="customize-add-to-cart"
             onClick={handleAddToCart}
             className="w-full bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-2xl py-4 shadow-violet-glow transition-all flex items-center justify-center gap-2 group active:scale-95"
           >

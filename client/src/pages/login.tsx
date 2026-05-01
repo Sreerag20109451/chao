@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "@/lib/store";
-import { setCredentials } from "@/lib/features/authSlice";
 import { UtensilsCrossed, Eye, EyeOff, LogIn, Lock, Mail } from "lucide-react";
-import { auth } from "@/lib/firebase";
 import { toast } from "sonner";
 import { validateEmail, validatePassword } from "@/lib/validators";
 import { loginClient, signInWithGoogle } from "@/lib/firebase/auth/service";
@@ -54,7 +52,6 @@ function ScrollReveal({ children, className = "", animation = "fade-up", style =
 
 export default function LoginPage() {
   const router = useRouter();
-  const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -85,11 +82,14 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
     try {
-      await loginClient(email, password);
+      const result = await loginClient(email, password);
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
       router.push("/");
-    } catch (error: any) {
-      const message = error?.message || "Login failed. Please try again.";
-      toast.error(message);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Login failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -97,11 +97,14 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
       router.push("/");
-    } catch (error) {
-      console.error("Google Sign-In error:", error);
-      toast.error("Google login failed.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Google login failed. Please try again.");
     }
   };
 
@@ -110,7 +113,7 @@ export default function LoginPage() {
       <div className="max-w-xl mx-auto px-6 relative z-10">
         <header className="text-center mb-16">
           <div className="pill-badge mx-auto mb-6 w-fit uppercase tracking-[0.1em]">
-            <LogIn className="w-3.5 h-3.5 text-brand-amber" /> Login
+            <LogIn className="w-3.5 h-3.5 text-brand-amber" aria-hidden="true" /> Login
           </div>
           <h1 className="font-display font-bold text-brand-text text-5xl md:text-6xl tracking-tight mb-4">
             Welcome <span className="text-brand-violet">Back</span>.
@@ -121,24 +124,24 @@ export default function LoginPage() {
         <ScrollReveal animation="fade-up" className="space-y-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-display font-semibold text-brand-text mb-2">Email Address</label>
+              <label htmlFor="client-login-email" className="block text-sm font-display font-semibold text-brand-text mb-2">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted/50" />
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className={`w-full bg-white border ${errors.email ? 'border-red-500' : 'border-brand-lavender-mid'} rounded-xl py-3.5 pl-12 pr-4 font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/20`} />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted/50" aria-hidden="true" />
+                <input id="client-login-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "client-login-email-error" : undefined} className={`w-full bg-white border ${errors.email ? 'border-red-500' : 'border-brand-lavender-mid'} rounded-xl py-3.5 pl-12 pr-4 font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/20`} />
               </div>
-              {errors.email && <p className="text-xs text-red-500 mt-1 ml-2 font-body">{errors.email}</p>}
+              {errors.email && <p id="client-login-email-error" className="text-xs text-red-600 mt-1 ml-2 font-body">{errors.email}</p>}
             </div>
             <div>
-              <label className="block text-sm font-display font-semibold text-brand-text mb-2">Password</label>
+              <label htmlFor="client-login-password" className="block text-sm font-display font-semibold text-brand-text mb-2">Password</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted/50" />
-                <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={`w-full bg-white border ${errors.password ? 'border-red-500' : 'border-brand-lavender-mid'} rounded-xl py-3.5 pl-12 pr-12 font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/20`} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-muted">{showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted/50" aria-hidden="true" />
+                <input id="client-login-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? "client-login-password-error" : undefined} className={`w-full bg-white border ${errors.password ? 'border-red-500' : 'border-brand-lavender-mid'} rounded-xl py-3.5 pl-12 pr-12 font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/20`} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-muted" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>{showPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}</button>
               </div>
-              {errors.password && <p className="text-xs text-red-500 mt-1 ml-2 font-body leading-tight">{errors.password}</p>}
+              {errors.password && <p id="client-login-password-error" className="text-xs text-red-600 mt-1 ml-2 font-body leading-tight">{errors.password}</p>}
             </div>
             <button type="submit" disabled={isSubmitting} className="w-full bg-brand-violet text-white font-display font-bold rounded-xl py-4 shadow-violet-glow disabled:opacity-70">
-              {isSubmitting ? "Signing in..." : <div className="flex items-center justify-center gap-2">Sign In <UtensilsCrossed className="w-4 h-4" /></div>}
+              {isSubmitting ? "Signing in..." : <div className="flex items-center justify-center gap-2">Sign In <UtensilsCrossed className="w-4 h-4" aria-hidden="true" /></div>}
             </button>
           </form>
 
@@ -156,7 +159,7 @@ export default function LoginPage() {
             onClick={handleGoogleSignIn}
             className="w-full flex items-center justify-center gap-3 bg-white border border-brand-lavender-mid text-brand-text font-display font-bold rounded-xl py-3.5 hover:bg-brand-lavender/10 transition-all shadow-sm"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 fill="#4285F4"
@@ -179,7 +182,7 @@ export default function LoginPage() {
           </button>
 
           <p className="text-center text-brand-muted font-body text-sm mt-8">
-            Don't have an account? <Link href="/register" className="text-brand-violet font-display font-bold hover:underline">Create account</Link>
+            Don&apos;t have an account? <Link href="/register" className="text-brand-violet font-display font-bold hover:underline">Create account</Link>
           </p>
         </ScrollReveal>
       </div>

@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useDispatch } from "react-redux";
 import { auth, db } from "@/lib/firebase";
 import { setCredentials, logout } from "@/lib/features/authSlice";
+import { toast } from "sonner";
 
 export default function FirebaseAuthHandler() {
   const dispatch = useDispatch();
@@ -36,6 +37,13 @@ export default function FirebaseAuthHandler() {
             const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
             if (userDoc.exists()) {
               const data = userDoc.data();
+              if (data.userrole !== "client") {
+                dispatch(logout());
+                await signOut(auth);
+                toast.error("This account is for the admin dashboard. Please use the admin portal.");
+                return;
+              }
+
               if (data.phone) phone = data.phone;
               if (data.addresses) addresses = data.addresses;
               if (data.primaryAddressIndex !== undefined) primaryAddressIndex = data.primaryAddressIndex;
@@ -43,8 +51,9 @@ export default function FirebaseAuthHandler() {
               if (typeof data.stripeCardLast4 === "string") stripeCardLast4 = data.stripeCardLast4;
               if (typeof data.stripeCardBrand === "string") stripeCardBrand = data.stripeCardBrand;
             }
-          } catch (e: any) {
-            console.warn("FirebaseAuthHandler: Firestore fetch failed:", e.message);
+          } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn("FirebaseAuthHandler: Firestore fetch failed:", message);
           }
 
           dispatch(

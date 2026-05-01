@@ -18,6 +18,11 @@ export const useStoreStatus = () => {
   // Track "now" in a way that triggers re-renders
   const [now, setNow] = useState(new Date());
 
+  const forceStoreOpenForE2E =
+    typeof window !== 'undefined' &&
+    Boolean((window as typeof window & { Cypress?: unknown }).Cypress) &&
+    window.localStorage.getItem('E2E_FORCE_STORE_OPEN') === 'true';
+
   useEffect(() => {
     console.log("Auth/Store: Subscribing to live store settings...");
     const unsub = listenToStoreSettings((s) => {
@@ -37,6 +42,10 @@ export const useStoreStatus = () => {
   }, []);
 
   const isOpen = useMemo((): boolean => {
+    if (forceStoreOpenForE2E) {
+      return true;
+    }
+
     if (!settings) {
       console.log("Auth/Store: No settings loaded yet, returning true (optimistic)");
       return true; 
@@ -80,12 +89,12 @@ export const useStoreStatus = () => {
     });
 
     return isWithinHours;
-  }, [settings, now]);
+  }, [forceStoreOpenForE2E, settings, now]);
 
   return { 
     isOpen, 
-    isAcceptingOrders: settings?.isAcceptingOrders ?? true, 
-    isLoaded: settings !== null,
+    isAcceptingOrders: forceStoreOpenForE2E ? true : settings?.isAcceptingOrders ?? true,
+    isLoaded: forceStoreOpenForE2E ? true : settings !== null,
     settings,
   };
 };

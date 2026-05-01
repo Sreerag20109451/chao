@@ -195,9 +195,9 @@ export default function CartPage() {
     }
   };
 
-  if (items.length === 0) {
+  if (items.length === 0 && !placedOrderId) {
     return (
-      <div className="min-h-screen pt-32 pb-20 flex items-center justify-center">
+      <div data-cy="empty-cart" className="min-h-screen pt-32 pb-20 flex items-center justify-center">
         <div className="max-w-md w-full px-6 text-center space-y-6">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm">
             <ShoppingBag className="w-10 h-10 text-brand-lavender-mid" />
@@ -208,6 +208,7 @@ export default function CartPage() {
           </p>
           <Link 
             href="/menu"
+            data-cy="empty-cart-explore-menu"
             className="inline-flex items-center justify-center bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-2xl px-8 py-4 shadow-violet-glow transition-all w-full"
           >
             Explore the Menu
@@ -247,6 +248,7 @@ export default function CartPage() {
                       <h3 className="font-display font-bold text-brand-text text-lg mb-2">Contact Number</h3>
                       <div className="flex gap-2">
                         <input 
+                          data-cy="checkout-phone"
                           type="tel"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
@@ -411,7 +413,7 @@ export default function CartPage() {
             <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-white/50 shadow-sm overflow-hidden">
               <ul className="divide-y divide-brand-lavender-mid">
                 {items.map((item) => (
-                  <li key={item.cartId} className="p-6 flex flex-col sm:flex-row sm:items-center gap-6 group">
+                  <li key={item.cartId} data-cy="cart-item" className="p-6 flex flex-col sm:flex-row sm:items-center gap-6 group">
                     <div className="w-20 h-20 bg-lavender-gradient rounded-2xl flex items-center justify-center text-4xl shadow-inner shrink-0 group-hover:scale-105 transition-transform">
                       {item.emoji}
                     </div>
@@ -449,6 +451,7 @@ export default function CartPage() {
                       <div className="mt-4 flex items-center justify-between">
                         <div className="flex items-center gap-1 bg-white border border-brand-lavender-mid rounded-xl p-1 shadow-sm">
                           <button 
+                            data-cy="cart-item-decrement"
                             onClick={() => dispatch(updateQuantity({ cartId: item.cartId, quantity: item.quantity - 1 }))}
                             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-brand-lavender text-brand-text transition-colors"
                           >
@@ -458,6 +461,7 @@ export default function CartPage() {
                             {item.quantity}
                           </span>
                           <button 
+                            data-cy="cart-item-increment"
                             onClick={() => dispatch(updateQuantity({ cartId: item.cartId, quantity: item.quantity + 1 }))}
                             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-brand-lavender text-brand-text transition-colors"
                           >
@@ -465,6 +469,7 @@ export default function CartPage() {
                           </button>
                         </div>
                         <button 
+                          data-cy="cart-item-remove"
                           onClick={() => dispatch(removeFromCart(item.cartId))}
                           className="flex items-center gap-1.5 text-red-500 hover:text-red-600 font-display font-bold text-xs uppercase tracking-wider transition-colors"
                         >
@@ -484,6 +489,7 @@ export default function CartPage() {
               <h2 className="font-display font-bold text-xl text-brand-text mb-6">Summary</h2>
               <div className="flex p-1 bg-brand-lavender/30 rounded-2xl mb-8">
                 <button 
+                  data-cy="order-type-delivery"
                   onClick={() => dispatch(setOrderType("delivery"))}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-display font-bold transition-all ${
                     orderType === "delivery" 
@@ -495,6 +501,7 @@ export default function CartPage() {
                   Delivery
                 </button>
                 <button 
+                  data-cy="order-type-collection"
                   onClick={() => dispatch(setOrderType("collection"))}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-display font-bold transition-all ${
                     orderType === "collection" 
@@ -524,7 +531,7 @@ export default function CartPage() {
                 </div>
                 <div className="pt-4 border-t border-brand-lavender-mid flex justify-between items-end">
                   <span className="font-display font-bold text-brand-text">Total</span>
-                  <span className="font-display font-bold text-3xl text-brand-violet">€{total.toFixed(2)}</span>
+                  <span data-cy="cart-total" className="font-display font-bold text-3xl text-brand-violet">€{total.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -536,6 +543,7 @@ export default function CartPage() {
                 <div className="flex p-1 bg-brand-lavender/30 rounded-2xl">
                   <button
                     type="button"
+                    data-cy="payment-method-cod"
                     onClick={() => setPaymentMethod("cod")}
                     className={`flex-1 py-2.5 rounded-xl text-xs font-display font-bold transition-all ${
                       paymentMethod === "cod"
@@ -547,6 +555,7 @@ export default function CartPage() {
                   </button>
                   <button
                     type="button"
+                    data-cy="payment-method-card"
                     onClick={() => setPaymentMethod("card")}
                     className={`flex-1 py-2.5 rounded-xl text-xs font-display font-bold transition-all ${
                       paymentMethod === "card"
@@ -656,6 +665,7 @@ export default function CartPage() {
               {paymentMethod === "card" && selectedSavedPaymentMethodId === "new" && (
                 <label className="mb-6 flex cursor-pointer items-start gap-3 rounded-2xl border border-brand-lavender-mid bg-white/70 p-4 text-left">
                   <input
+                    data-cy="save-payment-method"
                     type="checkbox"
                     checked={savePaymentMethod}
                     onChange={(e) => setSavePaymentMethod(e.target.checked)}
@@ -686,7 +696,7 @@ export default function CartPage() {
               )}
 
               {minimumEligibleAmount < MIN_ORDER_TOTAL && (
-                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                <div data-cy="minimum-order-warning" className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-center">
                   <p className="text-sm font-display font-bold text-amber-700">
                     Minimum order amount is €{MIN_ORDER_TOTAL.toFixed(2)} (excluding delivery)
                   </p>
@@ -697,6 +707,7 @@ export default function CartPage() {
               )}
               
               <button 
+                data-cy="checkout-button"
                 disabled={isCheckoutDisabled || isCardProcessing}
                 onClick={async () => {
                   if (!isStoreOpen) {

@@ -27,7 +27,7 @@ export default function AdminSettings() {
     }
   };
 
-  if (!settings) return <div className="p-8"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>;
+  if (!settings) return <div className="p-8"><Loader2 className="w-8 h-8 animate-spin mx-auto" aria-hidden="true" /></div>;
 
   const days = [
     { id: 'mon', label: 'Monday' },
@@ -51,8 +51,9 @@ export default function AdminSettings() {
           <h3 className="font-display font-bold text-xl text-brand-text border-b border-brand-lavender-mid pb-4">Store Information</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-display font-bold text-brand-muted uppercase tracking-widest">Restaurant Name</label>
+              <label htmlFor="settings-store-name" className="text-xs font-display font-bold text-brand-muted uppercase tracking-widest">Restaurant Name</label>
               <input 
+                id="settings-store-name"
                 type="text" 
                 value={settings.storeName} 
                 onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
@@ -60,8 +61,9 @@ export default function AdminSettings() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-display font-bold text-brand-muted uppercase tracking-widest">Contact Email</label>
+              <label htmlFor="settings-store-email" className="text-xs font-display font-bold text-brand-muted uppercase tracking-widest">Contact Email</label>
               <input 
+                id="settings-store-email"
                 type="email" 
                 value={settings.storeEmail} 
                 onChange={(e) => setSettings({ ...settings, storeEmail: e.target.value })}
@@ -69,8 +71,9 @@ export default function AdminSettings() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-display font-bold text-brand-muted uppercase tracking-widest">Min. Preparation Time (Mins)</label>
+              <label htmlFor="settings-min-prep-time" className="text-xs font-display font-bold text-brand-muted uppercase tracking-widest">Min. Preparation Time (Mins)</label>
               <input 
+                id="settings-min-prep-time"
                 type="number" 
                 value={settings.minPrepTime} 
                 onChange={(e) => setSettings({ ...settings, minPrepTime: parseInt(e.target.value) || 0 })}
@@ -93,6 +96,8 @@ export default function AdminSettings() {
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-brand-muted font-bold uppercase tracking-widest">Extra Price (€)</span>
                       <input 
+                        id={`settings-meat-price-${meatName}`}
+                        aria-label={`${meatName} extra price`}
                         type="number"
                         step="1"
                         min="0"
@@ -108,6 +113,7 @@ export default function AdminSettings() {
                     <label className="flex items-center gap-2 cursor-pointer">
                       <div className="relative">
                         <input 
+                          aria-label={`${meatName} availability`}
                           type="checkbox"
                           className="sr-only peer"
                           checked={option.available}
@@ -139,6 +145,7 @@ export default function AdminSettings() {
                 <span className="font-body text-sm text-brand-text w-24">{day.label}</span>
                 <div className="flex items-center gap-2">
                   <input 
+                    aria-label={`${day.label} opening time`}
                     type="text" 
                     value={settings.openingHours[day.id].open} 
                     onChange={(e) => {
@@ -150,6 +157,7 @@ export default function AdminSettings() {
                   />
                   <span className="text-brand-muted">to</span>
                   <input 
+                    aria-label={`${day.label} closing time`}
                     type="text" 
                     value={settings.openingHours[day.id].close} 
                     onChange={(e) => {
@@ -161,6 +169,7 @@ export default function AdminSettings() {
                   />
                   <label className="flex items-center gap-2 ml-4">
                     <input 
+                      aria-label={`${day.label} closed`}
                       type="checkbox" 
                       checked={!!settings.openingHours[day.id].closed} 
                       onChange={(e) => {
@@ -183,7 +192,7 @@ export default function AdminSettings() {
             disabled={isSaving}
             className="flex items-center gap-2 bg-brand-violet text-white px-8 py-4 rounded-2xl font-display font-bold shadow-violet-glow hover:bg-brand-violet-dark transition-all disabled:opacity-50"
           >
-            {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+            {isSaving ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : <Save className="w-5 h-5" aria-hidden="true" />}
             Save Changes
           </button>
         </div>

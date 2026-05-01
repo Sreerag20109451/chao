@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, LayoutDashboard, Utensils, ShoppingBag, Settings, LogOut, User, Receipt, Tag, Bike, MessageSquare } from "lucide-react";
+import { Menu, LayoutDashboard, Utensils, ShoppingBag, Settings, LogOut, User, Receipt, Tag, Bike, MessageSquare } from "lucide-react";
 
 import { useAuth } from "@/lib/authContext";
 import { subscribeToMessages } from "@/lib/firebase/messages/service";
@@ -73,7 +73,7 @@ export default function AdminNavbar() {
                       : "bg-white border-brand-lavender-mid text-brand-text"
                   }`}>
                 <div className="w-8 h-8 rounded-lg bg-brand-violet/10 flex items-center justify-center">
-                    <User className="w-4 h-4 text-brand-violet" />
+                    <User className="w-4 h-4 text-brand-violet" aria-hidden="true" />
                 </div>
                 <div className="text-left leading-tight">
                     <p className="text-[10px] font-bold text-brand-muted uppercase tracking-wider">Admin</p>
@@ -82,12 +82,13 @@ export default function AdminNavbar() {
              </div>
              <button 
               onClick={logout}
+              aria-label="Log out"
               className={`p-2.5 rounded-xl border transition-all hover:bg-red-50 hover:text-red-600 hover:border-red-200 ${
                     scrolled 
                       ? "bg-white/5 border-white/10 text-zinc-400" 
                       : "bg-white border-brand-lavender-mid text-brand-muted"
                   }`}>
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4" aria-hidden="true" />
              </button>
           </div>
 
@@ -99,8 +100,9 @@ export default function AdminNavbar() {
                   ? "text-white hover:bg-white/10"
                   : "text-brand-text hover:bg-brand-lavender"
               }`}
+              aria-label="Open menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5" aria-hidden="true" />
             </SheetTrigger>
 
             <SheetContent side="right" className="w-72 bg-brand-lavender border-l border-border p-6">
@@ -114,6 +116,7 @@ export default function AdminNavbar() {
                     <Link
                       to={href}
                       onClick={() => setMobileOpen(false)}
+                      aria-current={location.pathname === href ? "page" : undefined}
                       className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-display font-medium transition-colors ${
                         location.pathname === href
                           ? "bg-brand-violet text-white shadow-violet-glow"
@@ -121,7 +124,7 @@ export default function AdminNavbar() {
                       }`}
                     >
                       <span className="flex items-center gap-3">
-                        {icon}
+                        <span aria-hidden="true">{icon}</span>
                         {label}
                       </span>
                       {href === "/messages" && unreadCount > 0 && (
@@ -138,7 +141,7 @@ export default function AdminNavbar() {
                   <button 
                     onClick={logout}
                     className="flex items-center gap-3 w-full p-4 rounded-2xl bg-red-50 text-red-600 font-display font-bold hover:bg-red-100 transition-colors">
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4" aria-hidden="true" />
                     Sign Out
                   </button>
               </div>

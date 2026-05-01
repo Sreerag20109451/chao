@@ -37,6 +37,10 @@ interface AlertOrder {
 
 export default function GlobalNotification() {
   const { user } = useAuth();
+  const suppressAlertsForE2E =
+    typeof window !== "undefined" &&
+    Boolean((window as typeof window & { Cypress?: unknown }).Cypress) &&
+    window.localStorage.getItem("E2E_SUPPRESS_ADMIN_ALERTS") === "true";
   const initialLoadRef = useRef(true);
   const previousOrdersRef = useRef<Set<string>>(new Set());
   const ringtoneRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -72,6 +76,7 @@ export default function GlobalNotification() {
 
   // Subscribe to orders - only if authenticated
   useEffect(() => {
+    if (suppressAlertsForE2E) return;
     if (!user) return;
 
     const unsubscribe = subscribeToOrders((orders) => {
@@ -107,7 +112,7 @@ export default function GlobalNotification() {
       previousOrdersRef.current = currentIds;
     });
     return () => unsubscribe();
-  }, [soundEnabled, user]);
+  }, [soundEnabled, suppressAlertsForE2E, user]);
 
   // Keep ringtone in sync with pending alerts.
   useEffect(() => {
@@ -190,7 +195,7 @@ export default function GlobalNotification() {
   return (
     <>
       {/* Compact unlock control shown only when autoplay is blocked */}
-      {showEnableSoundButton && (
+      {!suppressAlertsForE2E && showEnableSoundButton && (
         <button
           onClick={handleEnableSound}
           className="fixed bottom-6 right-6 z-[310] flex items-center gap-2 bg-brand-violet hover:bg-brand-violet-dark text-white font-display font-bold rounded-full px-4 py-3 shadow-violet-glow transition-all active:scale-95"
@@ -201,7 +206,7 @@ export default function GlobalNotification() {
       )}
 
       {/* ── New Order Alert Modal ── */}
-      {pendingAlerts.length > 0 && (
+      {!suppressAlertsForE2E && pendingAlerts.length > 0 && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
             <div className="bg-brand-violet p-8 text-center relative overflow-hidden">

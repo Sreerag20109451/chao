@@ -1,59 +1,42 @@
 import { 
-  createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut,
-  updateProfile as updateFirebaseProfile
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../config";
 
-const mapAuthError = (error: any) => {
-  console.error("Admin Auth Error:", error);
-  if (error.code === 'auth/invalid-credential' || 
-      error.code === 'auth/user-not-found' || 
-      error.code === 'auth/wrong-password') {
+const getErrorCode = (error: unknown) =>
+  typeof error === "object" && error !== null && "code" in error
+    ? String((error as { code?: unknown }).code)
+    : "";
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : "An unexpected error occurred. Please try again.";
+
+const mapAuthError = (error: unknown) => {
+  const code = getErrorCode(error);
+  console.warn(`Admin auth error: ${code || "unknown"}`);
+  if (code === 'auth/invalid-credential' ||
+      code === 'auth/user-not-found' ||
+      code === 'auth/wrong-password') {
     return "Invalid email or password.";
   }
-  if (error.code === 'auth/email-already-in-use') {
+  if (code === 'auth/email-already-in-use') {
     return "This email is already registered. If you are a client, please use a different email for admin access.";
   }
-  if (error.code === 'auth/too-many-requests') {
+  if (code === 'auth/too-many-requests') {
     return "Too many failed attempts. Please try again later.";
   }
-  if (error.code === 'auth/internal-error') {
+  if (code === 'auth/internal-error') {
     return "A network error occurred. Please check your connection.";
   }
-  if (error.code === 'auth/network-request-failed') {
+  if (code === 'auth/network-request-failed') {
     return "Network request failed. Check your internet connection.";
   }
-  if (error.code === 'auth/weak-password') {
+  if (code === 'auth/weak-password') {
     return "Password is too weak. Please use at least 6 characters.";
   }
-  return error.message || "An unexpected error occurred. Please try again.";
-};
-
-export const registerAdmin = async (name: string, email: string, password: string) => {
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const { user: firebaseUser } = userCredential;
-    
-    await updateFirebaseProfile(firebaseUser, { displayName: name });
-    
-    try {
-      await setDoc(doc(db, "users", firebaseUser.uid), {
-        name,
-        email,
-        userrole: "admin",
-        createdAt: serverTimestamp(),
-      });
-    } catch (err) {
-      console.error("Firestore admin write failed:", err);
-    }
-
-    return firebaseUser;
-  } catch (error: any) {
-    throw new Error(mapAuthError(error));
-  }
+  return getErrorMessage(error);
 };
 
 export const loginAdmin = async (email: string, password: string) => {
@@ -70,11 +53,11 @@ export const loginAdmin = async (email: string, password: string) => {
     const userData = userDoc.data();
     if (userData.userrole !== "admin") {
       await signOut(auth);
-      throw new Error("Access denied. You do not have admin privileges.");
+      throw new Error("This account is for customer ordering. Please use the customer site.");
     }
     
     return userCredential;
-  } catch (error: any) {
+  } catch (error: unknown) {
     throw new Error(mapAuthError(error));
   }
 };

@@ -64,7 +64,8 @@ describe('Auth Service', () => {
       });
 
       const result = await loginClient('test@test.com', 'Password123!');
-      expect(result.user.uid).toBe('123');
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.user.uid).toBe('123');
     });
 
     it('should deny access if role is not client', async () => {
@@ -75,8 +76,12 @@ describe('Auth Service', () => {
         data: () => ({ userrole: 'admin' })
       });
 
-      await expect(loginClient('test@test.com', 'Password123!'))
-        .rejects.toThrow('Access denied. Please use the admin portal.');
+      const result = await loginClient('test@test.com', 'Password123!');
+
+      expect(result).toEqual({
+        ok: false,
+        message: 'This account is for the admin dashboard. Please use the admin portal.',
+      });
       expect(authFuncs.signOut).toHaveBeenCalled();
     });
   });

@@ -137,6 +137,7 @@ export default function MenuPage() {
                   <button
                     key={cat.id}
                     type="button"
+                    data-cy="menu-category-filter"
                     onClick={() => setActiveCategory(cat.id)}
                     aria-pressed={isActive}
                     className={`shrink-0 rounded-xl px-6 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-all ${
@@ -159,11 +160,11 @@ export default function MenuPage() {
         </p>
 
         {loadError ? (
-          <p className="font-body text-center text-red-600 py-20 text-lg">
+          <p data-cy="menu-load-error" className="font-body text-center text-red-600 py-20 text-lg">
             {loadError}
           </p>
         ) : filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div data-cy="menu-card-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filtered.map((item) => (
               <MenuCard key={item.id} item={item} deals={deals} />
             ))}

@@ -43,7 +43,7 @@ export default function AdminOrders() {
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
+    <div data-cy="admin-orders-page" className="space-y-8 animate-in fade-in duration-700">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -65,6 +65,7 @@ export default function AdminOrders() {
           <div className="relative w-full md:w-96">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted" />
             <input
+              data-cy="admin-orders-search"
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -106,6 +107,7 @@ export default function AdminOrders() {
                       const isOpen = expandedOrderIds.includes(order.id);
                       return (
                     <tr
+                      data-cy="admin-order-row"
                       className={`transition-colors ${
                         isOpen
                           ? "bg-brand-violet/[0.06] shadow-[inset_4px_0_0_0_#8b5cf6]"

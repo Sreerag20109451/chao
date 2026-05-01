@@ -48,7 +48,7 @@ export default function LoginPage() {
       await login(email, password);
       navigate("/");
     } catch (error: any) {
-      console.error("Login failed:", error);
+      console.warn(`Login failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setLoading(false);
     }
@@ -89,11 +89,11 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div className="space-y-2">
-              <label className="block text-xs font-display font-bold text-white/65 uppercase tracking-wider">
+              <label htmlFor="login-email" className="block text-xs font-display font-bold text-white/90 uppercase tracking-wider">
                 Email address
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/45" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" aria-hidden="true" />
                 <input
                   id="login-email"
                   type="email"
@@ -101,25 +101,29 @@ export default function LoginPage() {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="admin@chaothai.co"
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? "admin-login-email-error" : undefined}
                   className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/35 rounded-xl pl-11 pr-4 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/50 focus:border-brand-violet/40 transition-all"
                 />
               </div>
-              {errors.email && <p className="text-[11px] text-red-400 mt-1 font-body">{errors.email}</p>}
+              {errors.email && <p id="admin-login-email-error" className="text-[11px] text-red-300 mt-1 font-body">{errors.email}</p>}
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <label className="block text-xs font-display font-bold text-white/65 uppercase tracking-wider">
+              <label htmlFor="login-password" className="block text-xs font-display font-bold text-white/90 uppercase tracking-wider">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/45" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" aria-hidden="true" />
                 <input
                   id="login-password"
                   type={showPw ? "text" : "password"}
                   autoComplete="current-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
+                  aria-invalid={Boolean(errors.password)}
+                  aria-describedby={errors.password ? "admin-login-password-error" : undefined}
                   placeholder="••••••••"
                   className="w-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/35 rounded-xl pl-11 pr-11 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-brand-violet/50 focus:border-brand-violet/40 transition-all"
                 />
@@ -127,12 +131,13 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPw(p => !p)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
-                  tabIndex={-1}
+                  aria-label={showPw ? "Hide password" : "Show password"}
+                  aria-pressed={showPw}
                 >
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPw ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
                 </button>
               </div>
-              {errors.password && <p className="text-[11px] text-red-400 mt-1 font-body leading-tight">{errors.password}</p>}
+              {errors.password && <p id="admin-login-password-error" className="text-[11px] text-red-300 mt-1 font-body leading-tight">{errors.password}</p>}
             </div>
 
             {/* Submit */}
@@ -143,18 +148,15 @@ export default function LoginPage() {
               className="w-full mt-2 flex items-center justify-center gap-2 bg-brand-violet text-white font-display font-bold text-sm py-3.5 rounded-xl shadow-violet-glow hover:bg-brand-violet-dark disabled:opacity-60 disabled:cursor-not-allowed transition-all"
             >
               {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               ) : (
-                <>Sign in <ArrowRight className="w-4 h-4" /></>
+                <>Sign in <ArrowRight className="w-4 h-4" aria-hidden="true" /></>
               )}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-white/50 font-body">
-            Don't have an account?{" "}
-            <Link to="/register" className="text-brand-amber font-bold hover:text-brand-amber/90 transition-colors">
-              Create one
-            </Link>
+            Admin access is provisioned by the restaurant owner.
           </p>
         </div>
 

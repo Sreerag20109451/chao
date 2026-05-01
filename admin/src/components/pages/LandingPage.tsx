@@ -2,7 +2,7 @@
 
 /**
  * LandingPage.tsx — Public home shown when no admin is logged in.
- * Showcases the admin product with a CTA to login or register.
+ * Showcases the admin product with a CTA to login.
  */
 
 import React from "react";
@@ -48,12 +48,6 @@ export default function LandingPage() {
           >
             Log in
           </Link>
-          <Link
-            to="/register"
-            className="px-5 py-2.5 rounded-xl font-display font-bold text-sm bg-brand-violet text-white shadow-violet-glow hover:bg-brand-violet-dark transition-all"
-          >
-            Get Started
-          </Link>
         </div>
       </nav>
 
@@ -77,17 +71,11 @@ export default function LandingPage() {
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            to="/register"
+            to="/login"
             className="group inline-flex items-center gap-2 bg-brand-violet text-white font-display font-bold text-sm px-8 py-4 rounded-2xl shadow-violet-glow hover:bg-brand-violet-dark transition-all"
           >
-            Create your account
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-white font-display font-bold text-sm px-8 py-4 rounded-2xl hover:bg-white/10 transition-all"
-          >
             Sign in to dashboard
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
       </section>

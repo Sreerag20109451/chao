@@ -88,6 +88,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => handleNavigate(href)}
+                aria-current={pathname === href ? "page" : undefined}
                 className={`nav-link-hover font-display text-sm font-medium tracking-wide transition-colors ${
                   pathname === href
                     ? "text-brand-violet"
@@ -117,9 +118,9 @@ export default function Navbar() {
                 }`}
                 aria-label="View Cart"
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="w-5 h-5" aria-hidden="true" />
                 {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-brand-violet text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-violet-glow animate-in zoom-in duration-200">
+                  <span className="absolute -top-1 -right-1 bg-brand-violet text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-violet-glow animate-in zoom-in duration-200" aria-label={`${itemCount} items in cart`}>
                     {itemCount}
                   </span>
                 )}
@@ -137,7 +138,7 @@ export default function Navbar() {
                   }`}
                 >
                   <div className="w-6 h-6 rounded-full bg-brand-violet/20 flex items-center justify-center">
-                    <User className="w-3.5 h-3.5 text-brand-violet" />
+                    <User className="w-3.5 h-3.5 text-brand-violet" aria-hidden="true" />
                   </div>
                   <span className="font-display text-sm font-medium">
                     Welcome, <span className="font-bold">{user?.name.split(' ')[0]}</span>
@@ -152,7 +153,7 @@ export default function Navbar() {
                   }`}
                   aria-label="Logout"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             ) : (
@@ -174,7 +175,7 @@ export default function Navbar() {
                   ? "text-white hover:bg-white/10"
                   : "text-brand-text hover:bg-brand-lavender"
               }`} aria-label="Open menu">
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5" aria-hidden="true" />
             </SheetTrigger>
 
             <SheetContent side="right" className="w-72 bg-brand-lavender border-l border-border">
@@ -187,8 +188,9 @@ export default function Navbar() {
                 <button
                   className="inline-flex items-center justify-center p-2 text-brand-text hover:bg-brand-lavender-mid rounded-lg transition-colors"
                   onClick={() => setMobileOpen(false)}
+                  aria-label="Close menu"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5" aria-hidden="true" />
                 </button>
               </div>
 
@@ -198,6 +200,7 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={() => handleNavigate(href)}
+                      aria-current={pathname === href ? "page" : undefined}
                       className={`block w-full text-left px-4 py-3 rounded-xl font-display font-medium transition-colors ${
                         pathname === href
                           ? "bg-brand-violet text-white"
@@ -213,6 +216,7 @@ export default function Navbar() {
                     <Link
                       href="/cart"
                       onClick={() => setMobileOpen(false)}
+                      aria-current={pathname === "/cart" ? "page" : undefined}
                       className={`flex items-center justify-between px-4 py-3 rounded-xl font-display font-medium transition-colors ${
                         pathname === "/cart"
                           ? "bg-brand-violet text-white"
@@ -221,7 +225,7 @@ export default function Navbar() {
                     >
                       <span>Cart</span>
                       {itemCount > 0 && (
-                        <span className="bg-brand-violet text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                        <span className="bg-brand-violet text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full" aria-label={`${itemCount} items in cart`}>
                           {itemCount}
                         </span>
                       )}
@@ -235,10 +239,11 @@ export default function Navbar() {
                   <Link 
                     href="/profile"
                     onClick={() => setMobileOpen(false)}
+                    aria-current={pathname === "/profile" ? "page" : undefined}
                     className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-brand-violet/5 border border-brand-violet/10 hover:bg-brand-violet/10 transition-all active:scale-95"
                   >
                     <div className="w-10 h-10 rounded-full bg-brand-violet/20 flex items-center justify-center">
-                      <User className="w-5 h-5 text-brand-violet" />
+                      <User className="w-5 h-5 text-brand-violet" aria-hidden="true" />
                     </div>
                     <div>
                       <p className="font-display text-xs font-bold text-brand-violet uppercase tracking-wider">Account Settings</p>
@@ -251,7 +256,7 @@ export default function Navbar() {
                     onClick={handleLogout}
                     className="flex items-center justify-center gap-3 w-full p-4 rounded-2xl bg-red-50 text-red-600 font-display font-bold hover:bg-red-100 transition-colors"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4" aria-hidden="true" />
                     Sign Out
                   </button>
                 </div>

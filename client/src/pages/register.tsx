@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { UtensilsCrossed, Eye, EyeOff, UserPlus, Lock, Mail, User } from "lucide-react";
-import { auth } from "@/lib/firebase";
 import { validateEmail, validatePassword } from "@/lib/validators";
 import { toast } from "sonner";
 import { registerClient, signInWithGoogle } from "@/lib/firebase/auth/service";
@@ -88,9 +87,8 @@ export default function RegisterPage() {
     try {
       await registerClient(formData.name, formData.email, formData.password);
       router.push("/");
-    } catch (error: any) {
-      const message = error?.message || "Registration failed. Please try again.";
-      toast.error(message);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Registration failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -98,11 +96,14 @@ export default function RegisterPage() {
 
   const handleGoogleSignUp = async () => {
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
       router.push("/");
-    } catch (error) {
-      console.error("Google Sign-In error:", error);
-      toast.error("Google Sign-In failed.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Google Sign-In failed. Please try again.");
     }
   };
 
@@ -111,7 +112,7 @@ export default function RegisterPage() {
       <div className="max-w-xl mx-auto px-6 relative z-10">
         <header className="text-center mb-16">
           <div className="pill-badge mx-auto mb-6 w-fit uppercase tracking-[0.1em]">
-            <UserPlus className="w-3.5 h-3.5 text-brand-amber" />
+            <UserPlus className="w-3.5 h-3.5 text-brand-amber" aria-hidden="true" />
             Create Account
           </div>
           <h1 className="font-display font-bold text-brand-text text-5xl md:text-6xl tracking-tight mb-4">
@@ -126,10 +127,11 @@ export default function RegisterPage() {
           <div className="space-y-8">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-display font-semibold text-brand-text mb-2">Full Name</label>
+                <label htmlFor="client-register-name" className="block text-sm font-display font-semibold text-brand-text mb-2">Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted/50" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted/50" aria-hidden="true" />
                   <input
+                    id="client-register-name"
                     type="text"
                     required
                     value={formData.name}
@@ -141,30 +143,36 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-display font-semibold text-brand-text mb-2">Email Address</label>
+                <label htmlFor="client-register-email" className="block text-sm font-display font-semibold text-brand-text mb-2">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted/50" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted/50" aria-hidden="true" />
                   <input
+                    id="client-register-email"
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="name@example.com"
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={errors.email ? "client-register-email-error" : undefined}
                     className={`w-full bg-white border ${errors.email ? 'border-red-500' : 'border-brand-lavender-mid'} rounded-xl py-3.5 pl-12 pr-4 font-body text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-violet/20 focus:border-brand-violet transition-all shadow-sm`}
                   />
                 </div>
-                {errors.email && <p className="text-xs text-red-500 mt-1 ml-2 font-body">{errors.email}</p>}
+                {errors.email && <p id="client-register-email-error" className="text-xs text-red-600 mt-1 ml-2 font-body">{errors.email}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-display font-semibold text-brand-text mb-2">Password</label>
+                <label htmlFor="client-register-password" className="block text-sm font-display font-semibold text-brand-text mb-2">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted/50" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-muted/50" aria-hidden="true" />
                   <input
+                    id="client-register-password"
                     type={showPassword ? "text" : "password"}
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? "client-register-password-error" : undefined}
                     placeholder="••••••••"
                     className={`w-full bg-white border ${errors.password ? 'border-red-500' : 'border-brand-lavender-mid'} rounded-xl py-3.5 pl-12 pr-12 font-body text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-violet/20 focus:border-brand-violet transition-all shadow-sm`}
                   />
@@ -172,11 +180,13 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-violet transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}
                   </button>
                 </div>
-                {errors.password && <p className="text-xs text-red-500 mt-1 ml-2 font-body leading-tight">{errors.password}</p>}
+                {errors.password && <p id="client-register-password-error" className="text-xs text-red-600 mt-1 ml-2 font-body leading-tight">{errors.password}</p>}
               </div>
 
               <button
@@ -189,7 +199,7 @@ export default function RegisterPage() {
                 ) : (
                   <>
                     Create Account
-                    <UtensilsCrossed className="w-4 h-4" />
+                    <UtensilsCrossed className="w-4 h-4" aria-hidden="true" />
                   </>
                 )}
               </button>
@@ -208,7 +218,7 @@ export default function RegisterPage() {
               onClick={handleGoogleSignUp}
               className="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-50 text-brand-text font-display font-semibold py-4 rounded-2xl border border-zinc-200 transition-all duration-200 shadow-sm"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />

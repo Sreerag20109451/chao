@@ -13,7 +13,7 @@ import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { toast } from "sonner";
-import { registerAdmin, loginAdmin, logoutUser } from "./firebase";
+import { loginAdmin, logoutUser } from "./firebase";
 
 interface AdminUser {
   email: string | null;
@@ -26,7 +26,6 @@ interface AuthContextValue {
   user: AdminUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   userRole: string | null;
 }
@@ -61,29 +60,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
             if (userDoc.exists()) {
               const userData = userDoc.data();
+              if (userData?.userrole !== "admin") {
+                setUser(null);
+                await logoutUser();
+                toast.error("This account is for customer ordering. Please use the customer site.");
+                return;
+              }
+
               setUser({
                 email: firebaseUser.email,
                 name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Admin",
                 uid: firebaseUser.uid,
-                role: userData?.userrole || "client"
+                role: "admin"
               });
             } else {
-              setUser({
-                email: firebaseUser.email,
-                name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Admin",
-                uid: firebaseUser.uid,
-                role: "client"
-              });
+              setUser(null);
+              await logoutUser();
+              toast.error("No admin profile was found for this account.");
+              return;
             }
-          } catch (firestoreError: any) {
-            console.error("Auth listener Firestore error:", firestoreError.message);
-            // Fallback to basic info if Firestore fails (e.g. database not found)
-            setUser({
-              email: firebaseUser.email,
-              name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Admin",
-              uid: firebaseUser.uid,
-              role: "client"
-            });
+          } catch (firestoreError: unknown) {
+            const message = firestoreError instanceof Error ? firestoreError.message : String(firestoreError);
+            console.error("Auth listener Firestore error:", message);
+            setUser(null);
           }
         } else {
           setUser(null);
@@ -112,31 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       await loginAdmin(email, password);
-    } catch (error: any) {
-      console.error("Login error:", error);
-      const message = error?.message || (typeof error === 'string' ? error : "Login failed. Please try again.");
-      toast.error(message);
-      throw error;
-    }
-  };
-
-  /**
-   * Registers a new admin user.
-   * Creates the auth account and initializes the local user state.
-   */
-  const register = async (name: string, email: string, password: string) => {
-    try {
-      const firebaseUser = await registerAdmin(name, email, password);
-      
-      setUser({
-        email: firebaseUser.email,
-        name: name,
-        uid: firebaseUser.uid,
-        role: "admin"
-      });
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      const message = error?.message || (typeof error === 'string' ? error : "Registration failed. Please try again.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Login failed. Please try again.";
+      console.warn(`Login error: ${message}`);
       toast.error(message);
       throw error;
     }
@@ -151,8 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       await logoutUser();
       toast.info("Logged out successfully.");
-    } catch (error: any) {
-      console.error("Logout error:", error);
+    } catch (error: unknown) {
+      console.warn(`Logout error: ${error instanceof Error ? error.message : "Unknown error"}`);
       toast.error("Error logging out.");
       throw error;
     }
@@ -163,7 +140,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user, 
       isLoading, 
       login, 
-      register, 
       logout,
       userRole: user?.role || null 
     }}>

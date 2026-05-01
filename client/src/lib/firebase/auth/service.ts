@@ -4,11 +4,17 @@ import {
   signOut,
   updateProfile as updateFirebaseProfile,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  UserCredential
 } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../config";
-import { toast } from "sonner";
+
+export type AuthResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; message: string };
+
+const ADMIN_ACCOUNT_MESSAGE = "This account is for the admin dashboard. Please use the admin portal.";
 
 /**
  * Maps Firebase Auth error codes to user-friendly messages.
@@ -16,7 +22,8 @@ import { toast } from "sonner";
  * @returns A string containing the user-friendly error message.
  */
 const mapAuthError = (error: any) => {
-  console.error("Auth Error:", error);
+  const code = typeof error?.code === "string" ? error.code : "unknown";
+  console.warn(`Auth error: ${code}`);
   if (error.code === 'auth/invalid-credential' || 
       error.code === 'auth/user-not-found' || 
       error.code === 'auth/wrong-password') {
@@ -92,16 +99,22 @@ export const loginClient = async (email: string, password: string) => {
     const userDoc = await getDoc(doc(db, "users", user.uid));
     if (!userDoc.exists()) {
       await signOut(auth);
-      throw new Error("No account found. Please register as a client.");
+      return {
+        ok: false,
+        message: "No account found. Please register as a client.",
+      } satisfies AuthResult<UserCredential>;
     }
     
     const userData = userDoc.data();
     if (userData.userrole !== "client") {
       await signOut(auth);
-      throw new Error("Access denied. Please use the admin portal.");
+      return {
+        ok: false,
+        message: ADMIN_ACCOUNT_MESSAGE,
+      } satisfies AuthResult<UserCredential>;
     }
     
-    return userCredential;
+    return { ok: true, value: userCredential } satisfies AuthResult<UserCredential>;
   } catch (error: any) {
     throw new Error(mapAuthError(error));
   }
@@ -134,7 +147,10 @@ export const signInWithGoogle = async () => {
       const userData = userDoc.data();
       if (userData.userrole === "admin") {
         await signOut(auth);
-        throw new Error("This Google account is registered as an admin. Please use the admin portal.");
+        return {
+          ok: false,
+          message: ADMIN_ACCOUNT_MESSAGE,
+        } satisfies AuthResult<UserCredential>;
       }
       
       await updateDoc(userDocRef, {
@@ -142,7 +158,7 @@ export const signInWithGoogle = async () => {
       });
     }
 
-    return result;
+    return { ok: true, value: result } satisfies AuthResult<UserCredential>;
   } catch (error: any) {
     throw new Error(mapAuthError(error));
   }

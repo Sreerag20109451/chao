@@ -32,7 +32,6 @@ import Billing        from "./pages/Billing";
 import Drivers        from "./pages/Drivers";
 import LandingPage    from "./pages/LandingPage";
 import LoginPage      from "./pages/LoginPage";
-import RegisterPage   from "./pages/RegisterPage";
 import DealsPage      from "./pages/Deals";
 
 // ── Spinner shown while auth state is loading from localStorage ────────────────
@@ -87,7 +86,6 @@ function AppRoutes() {
       <Route element={<PublicRoute />}>
         <Route path="/landing"  element={<LandingPage />} />
         <Route path="/login"    element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
       </Route>
 
       {/* Protected routes — redirect to /landing if not logged in */}

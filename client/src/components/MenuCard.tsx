@@ -67,7 +67,7 @@ export default function MenuCard({ item, deals }: MenuCardProps) {
 
   return (
     /* card-hover utility adds lift + shadow on hover (defined in globals.css) */
-    <article className="card-hover bg-white rounded-2xl border border-border overflow-hidden flex flex-col group">
+    <article data-cy="menu-card" className="card-hover bg-white rounded-2xl border border-border overflow-hidden flex flex-col group">
 
       {/* ---- Dish emoji / image placeholder ---- */}
       <div className="h-40 bg-lavender-gradient flex items-center justify-center text-6xl select-none transition-transform duration-300 group-hover:scale-110">
@@ -116,6 +116,7 @@ export default function MenuCard({ item, deals }: MenuCardProps) {
           {hasOptions ? (
             <CustomizeModal item={{...item, basePrice: effectivePrice}}>
               <button
+                data-cy="customize-menu-item"
                 className="flex items-center justify-center bg-brand-violet hover:bg-brand-violet-dark text-white p-2 rounded-full shadow-sm transition-all duration-200 hover:scale-110 active:scale-95"
                 aria-label={`Customize ${item.name}`}
               >
@@ -124,6 +125,7 @@ export default function MenuCard({ item, deals }: MenuCardProps) {
             </CustomizeModal>
           ) : (
             <button
+              data-cy="add-menu-item-to-cart"
               onClick={handleAddToCart}
               className="flex items-center justify-center bg-brand-violet hover:bg-brand-violet-dark text-white p-2 rounded-full shadow-sm transition-all duration-200 hover:scale-110 active:scale-95"
               aria-label={`Add ${item.name} to cart`}
