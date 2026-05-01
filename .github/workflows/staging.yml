@@ -69,11 +69,87 @@ jobs:
         working-directory: client
         run: npm run build
 
+  e2e-smoke:
+    name: E2E Smoke
+    runs-on: ubuntu-latest
+    environment: staging
+    needs: test
+
+    env:
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      NEXT_PUBLIC_CLIENT_BASE_URL: http://localhost:3000
+      CLIENT_BASE_URL: http://localhost:3000
+      CUSTOMER_BASE_URL: http://localhost:3000
+      ADMIN_BASE_URL: http://localhost:3001
+      CYPRESS_CLIENT_BASE_URL: http://localhost:3000
+      CYPRESS_CUSTOMER_BASE_URL: http://localhost:3000
+      CYPRESS_ADMIN_BASE_URL: http://localhost:3001
+      E2E_CUSTOMER_EMAIL: ${{ secrets.E2E_CUSTOMER_EMAIL }}
+      E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      CYPRESS_E2E_CUSTOMER_EMAIL: ${{ secrets.E2E_CUSTOMER_EMAIL }}
+      CYPRESS_E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
+      CYPRESS_E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      CYPRESS_E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install admin dependencies
+        working-directory: admin
+        run: npm ci
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Install test dependencies
+        working-directory: test
+        run: npm ci
+
+      - name: Build admin
+        working-directory: admin
+        run: npm run build
+
+      - name: Build client
+        working-directory: client
+        run: npm run build
+
+      - name: Start client and admin
+        run: |
+          npm --prefix client run start -- -p 3000 &
+          npm --prefix admin run start -- -p 3001 &
+          npx --yes wait-on http://localhost:3000 http://localhost:3001
+
+      - name: Run Cypress smoke tests
+        working-directory: test
+        run: |
+          npm run cypress:run:auth:smoke
+          npm run cypress:run:ordering:smoke
+          npm run cypress:run:customer:smoke
+          npm run cypress:run:admin-ops:smoke
+
   deploy-client:
     name: Deploy Client to Vercel Staging
     runs-on: ubuntu-latest
     environment: staging
-    needs: test
+    needs: e2e-smoke
 
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -99,7 +175,7 @@ jobs:
     name: Deploy Admin to Vercel Staging
     runs-on: ubuntu-latest
     environment: staging
-    needs: test
+    needs: e2e-smoke
 
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
