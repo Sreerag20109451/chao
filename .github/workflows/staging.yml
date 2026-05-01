@@ -24,8 +24,8 @@ jobs:
       NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
       NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
-      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      STRIPE_SECRET_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.NEXT_PUBLIC_STRIPE_WEBHOOK_SECRET }}
       NEXT_PUBLIC_CLIENT_BASE_URL: http://localhost:3000
 
     steps:
@@ -55,7 +55,7 @@ jobs:
             exit 1
           fi
           if [ -z "$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" ] || [ -z "$STRIPE_SECRET_KEY" ]; then
-            echo "::error::Missing Stripe staging secrets. Required: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY and STRIPE_SECRET_KEY."
+            echo "::error::Missing Stripe staging secrets. Required GitHub secrets: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY and NEXT_PUBLIC_STRIPE_SECRET_KEY."
             exit 1
           fi
 
@@ -106,8 +106,8 @@ jobs:
       NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
       NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
-      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      STRIPE_SECRET_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.NEXT_PUBLIC_STRIPE_WEBHOOK_SECRET }}
       NEXT_PUBLIC_CLIENT_BASE_URL: http://localhost:3000
       CLIENT_BASE_URL: http://localhost:3000
       CUSTOMER_BASE_URL: http://localhost:3000
@@ -151,7 +151,7 @@ jobs:
             exit 1
           fi
           if [ -z "$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" ] || [ -z "$STRIPE_SECRET_KEY" ]; then
-            echo "::error::Missing Stripe staging secrets. Required: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY and STRIPE_SECRET_KEY."
+            echo "::error::Missing Stripe staging secrets. Required GitHub secrets: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY and NEXT_PUBLIC_STRIPE_SECRET_KEY."
             exit 1
           fi
 
