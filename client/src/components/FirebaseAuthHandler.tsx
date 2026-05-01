@@ -4,7 +4,6 @@ import { doc, getDoc } from "firebase/firestore";
 import { useDispatch } from "react-redux";
 import { auth, db } from "@/lib/firebase";
 import { setCredentials, logout } from "@/lib/features/authSlice";
-import { toast } from "sonner";
 
 export default function FirebaseAuthHandler() {
   const dispatch = useDispatch();
@@ -40,7 +39,6 @@ export default function FirebaseAuthHandler() {
               if (data.userrole !== "client") {
                 dispatch(logout());
                 await signOut(auth);
-                toast.error("This account is for the admin dashboard. Please use the admin portal.");
                 return;
               }
 
