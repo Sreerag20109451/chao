@@ -21,7 +21,7 @@ describe('Firebase Connectivity', () => {
   });
 
   it('should be able to talk to firestore (mocked)', async () => {
-    (firestore.getDocs as any).mockResolvedValue({ docs: [] });
+    vi.mocked(firestore.getDocs).mockResolvedValue({ docs: [] } as never);
     const q = firestore.query(firestore.collection(db, 'test_connection'), firestore.limit(1));
     await firestore.getDocs(q);
     expect(true).toBe(true);

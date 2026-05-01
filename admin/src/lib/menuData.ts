@@ -93,7 +93,7 @@ export interface MenuItem {
   available: boolean;
   isDeal?: boolean;
   emoji?: string;
-  createdAt?: any;
+  createdAt?: unknown;
 }
 
 export interface Deal {
@@ -102,7 +102,7 @@ export interface Deal {
   description: string;
   dealPrice: number;
   items: string[]; // Array of MenuItem IDs
-  startDate: any;
-  endDate: any;
+  startDate: string | number | Date;
+  endDate: string | number | Date;
   isActive: boolean;
 }

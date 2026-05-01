@@ -13,16 +13,19 @@ import {
   limit,
 } from "firebase/firestore";
 import { db } from "../config";
+import type { AdminOrder, FirestoreTimestampLike, OrderItem, OrderStatus } from "@/models/order";
 
 export interface OrderData {
-  items: any[];
+  items: OrderItem[];
   subtotal: number;
   deliveryCharge: number;
   total: number;
   orderType: "collection" | "delivery";
   address?: string;
-  status: "pending" | "preparing" | "ready" | "delivered" | "cancelled";
-  createdAt: any;
+  status: OrderStatus;
+  createdAt: FirestoreTimestampLike | Date | string | number | null;
+  userId?: string;
+  id?: string;
 }
 
 export const createOrder = async (orderData: Omit<OrderData, "status" | "createdAt">) => {
@@ -33,15 +36,15 @@ export const createOrder = async (orderData: Omit<OrderData, "status" | "created
   });
 };
 
-export const subscribeToOrders = (callback: (orders: any[]) => void) => {
+export const subscribeToOrders = (callback: (orders: AdminOrder[]) => void) => {
   const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
   return onSnapshot(q, (snapshot) => {
-    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AdminOrder[];
     callback(orders);
   });
 };
 
-const resolveClientUid = async (order: any) => {
+const resolveClientUid = async (order: Pick<OrderData, "userId">) => {
   const rawUserId = order?.userId;
   if (!rawUserId || typeof rawUserId !== "string") return null;
 
@@ -60,7 +63,7 @@ const resolveClientUid = async (order: any) => {
 };
 
 const createClientNotification = async (
-  order: any,
+  order: Pick<OrderData, "id" | "userId"> & { id: string },
   status: OrderData["status"],
   etaMinutes?: number
 ) => {
@@ -90,7 +93,7 @@ const createClientNotification = async (
 };
 
 export const updateOrderStatusWithNotification = async (
-  order: any,
+  order: Pick<OrderData, "id" | "userId"> & { id: string },
   status: OrderData["status"],
   etaMinutes?: number
 ) => {

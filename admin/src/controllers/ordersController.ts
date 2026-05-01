@@ -66,7 +66,7 @@ export const buildInvoiceData = (order: AdminOrder, activeDriver: string | null)
   const deliveryCharge = order.deliveryCharge ?? 0;
   const total = order.total ?? 0;
 
-  let serviceCharge =
+  const serviceCharge =
     typeof order.serviceCharge === "number" && !Number.isNaN(order.serviceCharge)
       ? order.serviceCharge
       : Math.max(0, Math.round((total - subtotal - deliveryCharge) * 100) / 100);

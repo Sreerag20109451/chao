@@ -7,6 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getMenuItems, addMenuItem, updateMenuItem, deleteMenuItem } from '../lib/firebase/menu/service';
+import type { MenuItem } from '../lib/menuData';
 import * as firestore from 'firebase/firestore';
 
 // Mock config
@@ -40,7 +41,7 @@ describe('Menu Service', () => {
       { id: '1', data: () => ({ name: 'Item 1' }) },
       { id: '2', data: () => ({ name: 'Item 2' }) }
     ];
-    (firestore.getDocs as any).mockResolvedValue({ docs: mockDocs });
+    vi.mocked(firestore.getDocs).mockResolvedValue({ docs: mockDocs } as never);
 
     const items = await getMenuItems();
     expect(items.length).toBe(2);
@@ -49,8 +50,16 @@ describe('Menu Service', () => {
   });
 
   it('addMenuItem should call addDoc', async () => {
-    (firestore.addDoc as any).mockResolvedValue({ id: 'new-id' });
-    const newItem = { name: 'New Item', basePrice: 10 } as any;
+    vi.mocked(firestore.addDoc).mockResolvedValue({ id: 'new-id' } as never);
+    const newItem: Omit<MenuItem, "id"> = {
+      name: 'New Item',
+      description: '',
+      basePrice: 10,
+      category: 'Beverages',
+      availableMeats: [],
+      availableSides: [],
+      available: true,
+    };
     
     const result = await addMenuItem(newItem);
     expect(firestore.addDoc).toHaveBeenCalled();
@@ -59,7 +68,7 @@ describe('Menu Service', () => {
 
   it('updateMenuItem should call updateDoc', async () => {
     const itemRef = { id: 'test-id' };
-    (firestore.doc as any).mockReturnValue(itemRef);
+    vi.mocked(firestore.doc).mockReturnValue(itemRef as never);
     
     await updateMenuItem('test-id', { name: 'Updated' });
     expect(firestore.updateDoc).toHaveBeenCalledWith(itemRef, { name: 'Updated' });
@@ -67,7 +76,7 @@ describe('Menu Service', () => {
 
   it('deleteMenuItem should call deleteDoc', async () => {
     const itemRef = { id: 'test-id' };
-    (firestore.doc as any).mockReturnValue(itemRef);
+    vi.mocked(firestore.doc).mockReturnValue(itemRef as never);
     
     await deleteMenuItem('test-id');
     expect(firestore.deleteDoc).toHaveBeenCalledWith(itemRef);

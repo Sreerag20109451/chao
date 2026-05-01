@@ -10,6 +10,7 @@ import {
   serverTimestamp 
 } from "firebase/firestore";
 import { db } from "../config";
+import type { FirestoreTimestampLike } from "@/models/order";
 
 export interface Driver {
   id: string;
@@ -17,7 +18,7 @@ export interface Driver {
   phone: string;
   status: "active" | "inactive";
   isWorkingToday: boolean;
-  createdAt?: any;
+  createdAt?: FirestoreTimestampLike | Date | string | number | null;
 }
 
 const DRIVERS_COLLECTION = "drivers";

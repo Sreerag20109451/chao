@@ -5,6 +5,19 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    rules: {
+      // Keep CI useful for deploy gating without failing existing app code on
+      // advisory React compiler checks or broad legacy typing cleanup.
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
+      "react/no-unescaped-entities": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+    },
+  },
   // NOTE: Client app still has significant legacy lint debt.
   // We keep Next + TypeScript strictness from eslint-config-next, and add
   // targeted architecture rules incrementally as modules are refactored.

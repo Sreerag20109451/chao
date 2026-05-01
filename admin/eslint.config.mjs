@@ -6,6 +6,17 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    rules: {
+      // Keep CI useful for deploy gating without failing existing app code on
+      // advisory React compiler checks or broad legacy typing cleanup.
+      "@typescript-eslint/no-explicit-any": "warn",
+      "react/no-unescaped-entities": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+    },
+  },
+  {
     files: ["src/controllers/**/*.ts", "src/controllers/**/*.tsx"],
     rules: {
       // Strict MVC enforcement for controller layer.

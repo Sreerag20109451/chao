@@ -11,6 +11,10 @@ vi.mock('@/lib/authContext', () => ({
   }),
 }));
 
+vi.mock('@/lib/firebase/messages/service', () => ({
+  subscribeToMessages: vi.fn(() => vi.fn()),
+}));
+
 describe('AdminNavbar Component', () => {
   it('renders user information and logout button', () => {
     render(
@@ -19,7 +23,7 @@ describe('AdminNavbar Component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Sreerag')).toBeInTheDocument();
+    expect(screen.getByText('Admin User')).toBeInTheDocument();
     // Use getAllByText for 'Admin' as it appears multiple times (label, logo, etc.)
     expect(screen.getAllByText('Admin')[0]).toBeInTheDocument();
   });

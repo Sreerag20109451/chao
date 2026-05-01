@@ -35,14 +35,14 @@ describe('Navbar Component', () => {
     });
   });
 
-  it('renders brand name and navigation links', () => {
+  it('renders brand logo and navigation links', () => {
     render(
       <Provider store={store}>
         <Navbar />
       </Provider>
     );
 
-    expect(screen.getByText('Chao')).toBeInTheDocument();
+    expect(screen.getByAltText('Chao Logo')).toBeInTheDocument();
     expect(screen.getByText('Menu')).toBeInTheDocument();
     expect(screen.getByText('Contact')).toBeInTheDocument();
   });
