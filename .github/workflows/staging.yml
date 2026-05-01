@@ -87,15 +87,12 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment
-        working-directory: client
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build with Vercel
-        working-directory: client
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel
-        working-directory: client
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
 
   deploy-admin:
@@ -116,13 +113,10 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel environment
-        working-directory: admin
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build with Vercel
-        working-directory: admin
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel
-        working-directory: admin
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
