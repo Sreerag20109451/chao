@@ -37,6 +37,28 @@ jobs:
         with:
           node-version: 20
 
+      - name: Validate staging secrets
+        run: |
+          if [ -z "$NEXT_PUBLIC_FIREBASE_API_KEY" ]; then
+            echo "::error::Missing NEXT_PUBLIC_FIREBASE_API_KEY in the GitHub staging environment secrets."
+            exit 1
+          fi
+          case "$NEXT_PUBLIC_FIREBASE_API_KEY" in
+            AIza*) ;;
+            *)
+              echo "::error::NEXT_PUBLIC_FIREBASE_API_KEY does not look like a Firebase Web API key. Copy the apiKey value from Firebase project settings."
+              exit 1
+              ;;
+          esac
+          if [ -z "$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" ] || [ -z "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" ] || [ -z "$NEXT_PUBLIC_FIREBASE_APP_ID" ]; then
+            echo "::error::One or more required Firebase staging secrets are missing: AUTH_DOMAIN, PROJECT_ID, APP_ID."
+            exit 1
+          fi
+          if [ -z "$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" ] || [ -z "$STRIPE_SECRET_KEY" ]; then
+            echo "::error::Missing Stripe staging secrets. Required: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY and STRIPE_SECRET_KEY."
+            exit 1
+          fi
+
       - name: Install admin dependencies
         working-directory: admin
         run: npm ci
@@ -110,6 +132,28 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: Validate staging secrets
+        run: |
+          if [ -z "$NEXT_PUBLIC_FIREBASE_API_KEY" ]; then
+            echo "::error::Missing NEXT_PUBLIC_FIREBASE_API_KEY in the GitHub staging environment secrets."
+            exit 1
+          fi
+          case "$NEXT_PUBLIC_FIREBASE_API_KEY" in
+            AIza*) ;;
+            *)
+              echo "::error::NEXT_PUBLIC_FIREBASE_API_KEY does not look like a Firebase Web API key. Copy the apiKey value from Firebase project settings."
+              exit 1
+              ;;
+          esac
+          if [ -z "$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" ] || [ -z "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" ] || [ -z "$NEXT_PUBLIC_FIREBASE_APP_ID" ]; then
+            echo "::error::One or more required Firebase staging secrets are missing: AUTH_DOMAIN, PROJECT_ID, APP_ID."
+            exit 1
+          fi
+          if [ -z "$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" ] || [ -z "$STRIPE_SECRET_KEY" ]; then
+            echo "::error::Missing Stripe staging secrets. Required: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY and STRIPE_SECRET_KEY."
+            exit 1
+          fi
 
       - name: Install admin dependencies
         working-directory: admin
